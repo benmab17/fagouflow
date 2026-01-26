@@ -13,6 +13,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy  # Important pour get_success_url
 from django.utils import timezone
 from django.utils.dateparse import parse_date
+from django.contrib.auth.decorators import login_required
+
 
 # Modèles de l'application
 from audit.models import AuditEvent
@@ -393,12 +395,17 @@ class RoleLoginView(LoginView):
             
         return reverse_lazy("dashboard")
 
+
+
 @login_required
 def profile_view(request):
     user = request.user
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "update_avatar":
+            print("FILES =", request.FILES)
+            print("POST =", request.POST)
+
             avatar = request.FILES.get("avatar")
             if not avatar:
                 messages.error(request, "Veuillez sélectionner une photo.")
@@ -407,24 +414,10 @@ def profile_view(request):
                 user.save(update_fields=["avatar"])
                 messages.success(request, "Photo de profil mise à jour.")
             return redirect("/profile/")
-        if action == "change_password":
-            old_password = request.POST.get("old_password") or ""
-            new_password = request.POST.get("new_password") or ""
-            confirm_password = request.POST.get("confirm_password") or ""
-            if not user.check_password(old_password):
-                messages.error(request, "Mot de passe actuel incorrect.")
-                return redirect("/profile/")
-            if not new_password or new_password != confirm_password:
-                messages.error(request, "Les nouveaux mots de passe ne correspondent pas.")
-                return redirect("/profile/")
-            user.set_password(new_password)
-            user.save(update_fields=["password"])
-            update_session_auth_hash(request, user)
-            messages.success(request, "Mot de passe mis à jour.")
-            return redirect("/profile/")
-        messages.error(request, "Action invalide.")
-        return redirect("/profile/")
     return render(request, "ui/profile.html", {"user": user})
+
+
+
 
 
 @login_required

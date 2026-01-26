@@ -33,6 +33,8 @@ INSTALLED_APPS = [
     "reports",
     "django.contrib.humanize",
     "chat.apps.ChatConfig",
+    "cloudinary",
+    "cloudinary_storage",
 ]
 
 MIDDLEWARE = [
@@ -126,7 +128,16 @@ REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 REPORTS_OUTPUT_DIR = BASE_DIR / "reports_out"
 
-import os
+
 
 STATIC_URL = "/static/"
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.environ.get("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET"),
+}
+
+DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"

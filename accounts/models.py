@@ -3,6 +3,8 @@ from __future__ import annotations
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
+from cloudinary.models import CloudinaryField
+
 
 
 class UserManager(BaseUserManager):
@@ -40,7 +42,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=200)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     site = models.CharField(max_length=10, choices=SITE_CHOICES)
-    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+    avatar = CloudinaryField("avatar", null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
