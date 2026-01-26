@@ -3,6 +3,7 @@ from pathlib import Path
 from datetime import timedelta
 
 from dotenv import load_dotenv
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -36,6 +37,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -66,15 +68,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+_default_db_url = "postgresql://{user}:{password}@{host}:{port}/{name}".format(
+    user=os.getenv("POSTGRES_USER", "fagouflow"),
+    password=os.getenv("POSTGRES_PASSWORD", "fagouflow"),
+    host=os.getenv("POSTGRES_HOST", "db"),
+    port=os.getenv("POSTGRES_PORT", "5432"),
+    name=os.getenv("POSTGRES_DB", "fagouflow"),
+)
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "fagouflow"),
-        "USER": os.getenv("POSTGRES_USER", "fagouflow"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "fagouflow"),
-        "HOST": os.getenv("POSTGRES_HOST", "db"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
-    }
+    "default": dj_database_url.config(default=_default_db_url, conn_max_age=600)
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -90,6 +92,8 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -117,3 +121,8 @@ SIMPLE_JWT = {
 REDIS_URL = os.getenv("REDIS_URL", "redis://redis:6379/0")
 
 REPORTS_OUTPUT_DIR = BASE_DIR / "reports_out"
+
+import os
+
+STATIC_URL = "/static/"
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
