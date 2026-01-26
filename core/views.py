@@ -364,16 +364,31 @@ class RoleLoginView(LoginView):
     template_name = "ui/login.html"
 
     def form_valid(self, form):
+        # Utiliser l'utilisateur authentifié issu du formulaire (fiable)
+        user = form.get_user()
+
+        # Laisser Django faire le login + redirection
         response = super().form_valid(form)
-        user = self.request.user
-        messages.success(self.request, f"Bienvenue {user.full_name}")
+
+        # Message de bienvenue robuste (si full_name n'existe pas)
+        name = getattr(user, "full_name", "") or getattr(user, "get_full_name", lambda: "")() or str(user)
+        messages.success(self.request, f"Bienvenue {name}")
+
         return response
 
     def get_success_url(self):
-        user = self.request.user
-        if user.role in ("BOSS", "HQ_ADMIN", "BRANCH_AGENT"):
+        user = getattr(self.request, "user", None)
+
+        # Si quelque chose est bizarre, on retombe sur dashboard
+        if not user or not getattr(user, "is_authenticated", False):
             return "/dashboard/"
+
+        role = getattr(user, "role", None)
+        if role in ("BOSS", "HQ_ADMIN", "BRANCH_AGENT"):
+            return "/dashboard/"
+
         return "/dashboard/"
+
 
 
 @login_required
