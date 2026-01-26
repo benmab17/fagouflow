@@ -1,51 +1,74 @@
-from .base import * # noqa
 import os
 import dj_database_url
+from .base import * # noqa
 
-# --- Core ---
+# --- SÉCURITÉ CORE ---
 DEBUG = False
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
-# Railway est derrière un proxy TLS (HTTPS)
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-SECURE_SSL_REDIRECT = False  # À mettre sur True une fois que tout fonctionne
-
-# Récupération de la Secret Key
-SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", os.getenv("SECRET_KEY"))
-
-# --- Hosts / CSRF ---
+# --- HOSTS & CSRF ---
 ALLOWED_HOSTS = [
     h.strip()
-    for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",")
+    for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "fagouflow.onrender.com").split(",")
     if h.strip()
 ]
-if not ALLOWED_HOSTS:
-    ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
-    o.strip()
-    for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if o.strip()
+    f"https://{h}" for h in ALLOWED_HOSTS
 ]
 
-# --- Database (Correction Railway Postgres) ---
-# On récupère l'URL de la base de données
-DATABASE_URL = os.getenv("DATABASE_URL")
+# --- DATABASE ---
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 DATABASES = {
     "default": dj_database_url.config(
         default=DATABASE_URL,
         conn_max_age=600,
-        ssl_require=False, # Railway Postgres fonctionne souvent sans SSL strict en interne
+        conn_health_checks=True,
     )
 }
+DATABASES["default"]["OPTIONS"] = {"sslmode": "require"}
 
-# --- Cookies / Sessions (Sécurité HTTPS) ---
-CSRF_COOKIE_SECURE = True
+# --- SÉCURITÉ HTTPS ---
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_SAMESITE = "Lax"
 SESSION_COOKIE_SAMESITE = "Lax"
 
-# --- Logging (Configuration robuste pour Railway) ---
+# --- FICHIERS STATIQUES ---
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_URL = "/static/"
+
+# --- STOCKAGE (MEDIA & STATIC) ---
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.environ.get("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.environ.get("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET"),
+}
+
+# Configuration STORAGES (Obligatoire pour Django 4.2+)
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
+# Insertion des apps nécessaires
+if "cloudinary_storage" not in INSTALLED_APPS:
+    INSTALLED_APPS.insert(0, "cloudinary_storage")
+if "cloudinary" not in INSTALLED_APPS:
+    INSTALLED_APPS.append("cloudinary")
+if "whitenoise.runserver_nostatic" not in INSTALLED_APPS:
+    INSTALLED_APPS.insert(0, "whitenoise.runserver_nostatic")
+
+MEDIA_URL = "/media/"
+
+# --- LOGGING ---
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -66,16 +89,4 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'INFO',
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
 }
-
-import os
-
-STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
