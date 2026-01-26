@@ -51,5 +51,7 @@ urlpatterns = [
     path("accounts/login/", RedirectView.as_view(url="/login/", permanent=False)),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Cette modification permet de servir les médias même si DEBUG est False, 
+# ce qui est nécessaire pour que Cloudinary prenne le relais correctement.
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

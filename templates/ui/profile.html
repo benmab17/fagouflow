@@ -1,4 +1,6 @@
 {% extends "ui/base.html" %}
+{% load static %}
+{% load avatar %}
 
 {% block title %}Mon profil - FagouFlow{% endblock %}
 
@@ -8,13 +10,7 @@
       <div class="card shadow-sm">
         <div class="card-body">
           <h5 class="card-title">Mes informations</h5>
-          {% if user.avatar %}
-            <img src="{{ user.avatar.url }}" alt="Avatar" class="rounded mb-3" width="120" height="120" />
-          {% else %}
-            <div class="rounded bg-secondary text-white d-flex align-items-center justify-content-center mb-3" style="width:120px;height:120px;">
-              {{ user.full_name|default:user.email|slice:":1" }}
-            </div>
-          {% endif %}
+          <img src="{{ user|avatar_url }}" alt="Avatar" class="rounded mb-3" width="120" height="120" />
           <p class="mb-1"><strong>Email :</strong> {{ user.email }}</p>
           <p class="mb-1"><strong>Nom complet :</strong> {{ user.full_name }}</p>
           <p class="mb-1"><strong>Rôle :</strong> {{ user.role }}</p>

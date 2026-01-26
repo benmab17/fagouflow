@@ -397,7 +397,7 @@ class RoleLoginView(LoginView):
 
 
 
-@@login_required
+@login_required
 def profile_view(request):
     user = request.user
     if request.method == "POST":

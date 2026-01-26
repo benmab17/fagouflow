@@ -48,13 +48,13 @@ CLOUDINARY_STORAGE = {
     "API_SECRET": os.environ.get("CLOUDINARY_API_SECRET"),
 }
 
-# Configuration STORAGES (Obligatoire pour Django 4.2+)
+# Configuration STORAGES (Corrigée pour éviter l'erreur 500)
 STORAGES = {
     "default": {
         "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
     },
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage", # Manifest supprimé ici
     },
 }
 

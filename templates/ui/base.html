@@ -1,4 +1,5 @@
 {% load static %}
+{% load avatar %}
 <!doctype html>
 <html lang="en">
   <head>
@@ -59,21 +60,14 @@
                   data-bs-toggle="dropdown"
                   aria-expanded="false"
                 >
-                  {% if request.user.avatar %}
+                  {% if request.user %}
                     <img
-                      src="{{ request.user.avatar.url }}"
+                      src="{{ request.user|avatar_url }}"
                       alt="Avatar"
                       width="28"
                       height="28"
                       class="rounded-circle border border-light"
                     />
-                  {% else %}
-                    <span
-                      class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center"
-                      style="width:28px;height:28px;font-size:0.75rem;"
-                    >
-                      {{ request.user.full_name|default:request.user.email|slice:":1" }}
-                    </span>
                   {% endif %}
                   <span class="small">{{ request.user.email }}</span>
                 </a>
