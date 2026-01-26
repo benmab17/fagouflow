@@ -360,35 +360,46 @@ def logout_view(request):
     return redirect("/login/")
 
 
+from django.contrib.auth.views import LoginView
+from django.contrib import messages
+from django.urls import reverse_lazy
+from django.shortcuts import redirect
+
 class RoleLoginView(LoginView):
     template_name = "ui/login.html"
 
     def form_valid(self, form):
-        # Utiliser l'utilisateur authentifié issu du formulaire (fiable)
+        """
+        Cette méthode est appelée quand le formulaire est valide.
+        L'utilisateur est authentifié ici.
+        """
+        # On récupère l'utilisateur depuis le formulaire AVANT le super()
+        # pour être plus explicite et robuste.
         user = form.get_user()
-
-        # Laisser Django faire le login + redirection
+        
+        # Appel du parent pour finaliser la session de login
         response = super().form_valid(form)
-
-        # Message de bienvenue robuste (si full_name n'existe pas)
-        name = getattr(user, "full_name", "") or getattr(user, "get_full_name", lambda: "")() or str(user)
-        messages.success(self.request, f"Bienvenue {name}")
-
+        
+        # Récupération sécurisée du nom (fallback sur l'username si full_name n'existe pas)
+        display_name = getattr(user, 'full_name', None) or user.get_full_name() or user.username
+        
+        messages.success(self.request, f"Bienvenue {display_name}")
         return response
 
     def get_success_url(self):
-        user = getattr(self.request, "user", None)
-
-        # Si quelque chose est bizarre, on retombe sur dashboard
-        if not user or not getattr(user, "is_authenticated", False):
-            return "/dashboard/"
-
-        role = getattr(user, "role", None)
+        """
+        Redirection dynamique basée sur le rôle.
+        """
+        user = self.request.user
+        
+        # Utilisation de getattr pour éviter un plantage si l'attribut est absent
+        role = getattr(user, 'role', None)
+        
+        # Logique de redirection robuste
         if role in ("BOSS", "HQ_ADMIN", "BRANCH_AGENT"):
-            return "/dashboard/"
-
-        return "/dashboard/"
-
+            return reverse_lazy("dashboard") # Utilisez des noms de routes !
+            
+        return reverse_lazy("dashboard")
 
 
 @login_required
