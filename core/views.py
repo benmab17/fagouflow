@@ -1,22 +1,24 @@
-from datetime import timedelta
 import csv
+from datetime import timedelta
 
+# Django Core & Auth
 from django.contrib import messages
-from django.contrib.auth import logout as auth_logout
+from django.contrib.auth import logout as auth_logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.views import LoginView
 from django.core.paginator import Paginator
 from django.db.models import DecimalField, ExpressionWrapper, F, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
-from django.utils.dateparse import parse_date
+from django.urls import reverse_lazy  # Important pour get_success_url
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
+# Modèles de l'application
+from audit.models import AuditEvent
 from chat.models import ChatMessage
 from documents.models import Document, DocumentShare, DocumentSiteShare
 from logistics.models import ContainerShipment, ContainerItem
-from audit.models import AuditEvent
 
 STATUS_LABELS = {
     "CREATED": "Créé",
@@ -359,48 +361,37 @@ def logout_view(request):
     auth_logout(request)
     return redirect("/login/")
 
-
-from django.contrib.auth.views import LoginView
-from django.contrib import messages
-from django.urls import reverse_lazy
-from django.shortcuts import redirect
-
 class RoleLoginView(LoginView):
     template_name = "ui/login.html"
 
     def form_valid(self, form):
-        """
-        Cette méthode est appelée quand le formulaire est valide.
-        L'utilisateur est authentifié ici.
-        """
-        # On récupère l'utilisateur depuis le formulaire AVANT le super()
-        # pour être plus explicite et robuste.
-        user = form.get_user()
-        
-        # Appel du parent pour finaliser la session de login
+        # 1. Appelle la logique de connexion parente (crée la session)
         response = super().form_valid(form)
         
-        # Récupération sécurisée du nom (fallback sur l'username si full_name n'existe pas)
+        # 2. Récupère l'utilisateur qui vient de se connecter
+        user = self.request.user
+        
+        # 3. Sécurité : getattr(objet, 'nom_attribut', valeur_par_defaut)
+        # Si 'full_name' n'existe pas dans ton modèle User, il prendra l'username
+        # Cela évite l'AttributeError qui cause la 500
         display_name = getattr(user, 'full_name', None) or user.get_full_name() or user.username
         
+        # 4. Ajoute le message de succès
         messages.success(self.request, f"Bienvenue {display_name}")
+        
         return response
 
     def get_success_url(self):
-        """
-        Redirection dynamique basée sur le rôle.
-        """
         user = self.request.user
         
-        # Utilisation de getattr pour éviter un plantage si l'attribut est absent
+        # Sécurité ici aussi pour le champ 'role'
         role = getattr(user, 'role', None)
         
-        # Logique de redirection robuste
+        # Logique de redirection basée sur le rôle
         if role in ("BOSS", "HQ_ADMIN", "BRANCH_AGENT"):
-            return reverse_lazy("dashboard") # Utilisez des noms de routes !
+            return reverse_lazy("dashboard")
             
         return reverse_lazy("dashboard")
-
 
 @login_required
 def profile_view(request):
