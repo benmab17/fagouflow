@@ -76,7 +76,11 @@ _default_db_url = "postgresql://{user}:{password}@{host}:{port}/{name}".format(
     name=os.getenv("POSTGRES_DB", "fagouflow"),
 )
 DATABASES = {
-    "default": dj_database_url.config(default=_default_db_url, conn_max_age=600)
+    "default": dj_database_url.config(
+        default=os.getenv("DATABASE_URL"),
+        conn_max_age=600,
+        ssl_require=True,
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
