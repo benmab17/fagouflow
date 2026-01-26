@@ -48,6 +48,7 @@ urlpatterns = [
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/", include(router.urls)),
+    path("accounts/login/", RedirectView.as_view(url="/login/", permanent=False)),
 ]
 
 if settings.DEBUG:
