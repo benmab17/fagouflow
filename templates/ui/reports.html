@@ -1,0 +1,120 @@
+{% extends "ui/base.html" %}
+
+{% block title %}Rapports - FagouFlow{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="mb-0">Rapports</h3>
+    <form method="get" class="d-flex gap-2">
+      <select class="form-select" name="period">
+        <option value="week" {% if period == "week" %}selected{% endif %}>Semaine</option>
+        <option value="month" {% if period == "month" %}selected{% endif %}>Mois</option>
+      </select>
+      <button class="btn btn-primary" type="submit">Mettre à jour</button>
+      <button class="btn btn-outline-secondary" type="submit" name="export" value="csv">Exporter CSV</button>
+    </form>
+  </div>
+
+  <div class="mb-4">
+    <h5 class="mb-3">Rapport du jour ({{ today|date:"d/m/Y" }})</h5>
+    <div class="row g-3">
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="text-muted small">Total des conteneurs</div>
+            <div class="h4 mb-0">{{ day_total }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="text-muted small">En transit</div>
+            <div class="h4 mb-0">{{ day_in_transit }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="text-muted small">Livrés</div>
+            <div class="h4 mb-0">{{ day_delivered }}</div>
+          </div>
+        </div>
+      </div>
+      <div class="col-12 col-md-6 col-xl-3">
+        <div class="card shadow-sm">
+          <div class="card-body">
+            <div class="text-muted small">Valeur totale</div>
+            <div class="h4 mb-0">{{ day_value|floatformat:2 }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title">
+        Rapport {{ period_label|lower }} ({{ start_date|date:"d/m/Y" }} → {{ today|date:"d/m/Y" }})
+      </h5>
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card border-0 bg-light">
+            <div class="card-body">
+              <div class="text-muted small">Total des conteneurs</div>
+              <div class="h5 mb-0">{{ period_total }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card border-0 bg-light">
+            <div class="card-body">
+              <div class="text-muted small">En transit</div>
+              <div class="h5 mb-0">{{ period_in_transit }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card border-0 bg-light">
+            <div class="card-body">
+              <div class="text-muted small">Livrés</div>
+              <div class="h5 mb-0">{{ period_delivered }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6 col-xl-3">
+          <div class="card border-0 bg-light">
+            <div class="card-body">
+              <div class="text-muted small">Valeur totale</div>
+              <div class="h5 mb-0">{{ period_value|floatformat:2 }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Période</th>
+              <th>Total des conteneurs</th>
+              <th>En transit</th>
+              <th>Livrés</th>
+              <th>Valeur totale</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ period_label }}</td>
+              <td>{{ period_total }}</td>
+              <td>{{ period_in_transit }}</td>
+              <td>{{ period_delivered }}</td>
+              <td>{{ period_value|floatformat:2 }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

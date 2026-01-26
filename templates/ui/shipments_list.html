@@ -1,0 +1,114 @@
+{% extends "ui/base.html" %}
+
+{% block title %}Liste des conteneurs - FagouFlow{% endblock %}
+
+{% block content %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title mb-3">Filtres</h5>
+      <form class="row g-3" method="get">
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="status">Statut</label>
+          <select class="form-select" id="status" name="status">
+            <option value="">Tous</option>
+            <option value="CREATED" {% if status == "CREATED" %}selected{% endif %}>Créé</option>
+            <option value="IN_TRANSIT" {% if status == "IN_TRANSIT" %}selected{% endif %}>En transit</option>
+            <option value="ARRIVED" {% if status == "ARRIVED" %}selected{% endif %}>Arrivé</option>
+            <option value="CLEARED" {% if status == "CLEARED" %}selected{% endif %}>Dédouané</option>
+            <option value="DELIVERED" {% if status == "DELIVERED" %}selected{% endif %}>Livré</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="site">Site</label>
+          <input class="form-control" id="site" name="site" value="{{ site }}" placeholder="Ex: PN" />
+        </div>
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="date">Date (ETD ou création)</label>
+          <input class="form-control" id="date" name="date" type="date" value="{{ date }}" />
+        </div>
+        <div class="col-12 d-flex gap-2">
+          <button class="btn btn-primary" type="submit">Filtrer</button>
+          <a class="btn btn-outline-secondary" href="/shipments/">Réinitialiser</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title">Liste des conteneurs</h5>
+      {% if shipments %}
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Conteneur</th>
+                <th>Statut</th>
+                <th>Site</th>
+                <th>ETD</th>
+                <th>Créé le</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for shipment in shipments %}
+                <tr>
+                  <td>
+                    <a href="{% url 'shipment_detail' shipment.id %}" class="text-decoration-none">
+                      {{ shipment.container_no }}
+                    </a>
+                  </td>
+                  <td>
+                    {% if shipment.status == "CREATED" %}
+                      <span class="badge text-bg-secondary">{{ shipment.status_label }}</span>
+                    {% elif shipment.status == "IN_TRANSIT" %}
+                      <span class="badge text-bg-warning">{{ shipment.status_label }}</span>
+                    {% elif shipment.status == "ARRIVED" %}
+                      <span class="badge text-bg-info">{{ shipment.status_label }}</span>
+                    {% elif shipment.status == "CLEARED" %}
+                      <span class="badge text-bg-primary">{{ shipment.status_label }}</span>
+                    {% elif shipment.status == "DELIVERED" %}
+                      <span class="badge text-bg-success">{{ shipment.status_label }}</span>
+                    {% else %}
+                      <span class="badge text-bg-light text-dark">{{ shipment.status }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ shipment.destination_site|default:"(aucun site)" }}</td>
+                  <td>{{ shipment.etd|date:"d/m/Y" }}</td>
+                  <td>{{ shipment.created_at|date:"d/m/Y H:i" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if page_obj.has_other_pages %}
+          <nav aria-label="Pagination">
+            <ul class="pagination mb-0">
+              {% if page_obj.has_previous %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ page_obj.previous_page_number }}&status={{ status }}&site={{ site }}&date={{ date }}">Précédent</a>
+                </li>
+              {% else %}
+                <li class="page-item disabled"><span class="page-link">Précédent</span></li>
+              {% endif %}
+
+              <li class="page-item disabled">
+                <span class="page-link">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+              </li>
+
+              {% if page_obj.has_next %}
+                <li class="page-item">
+                  <a class="page-link" href="?page={{ page_obj.next_page_number }}&status={{ status }}&site={{ site }}&date={{ date }}">Suivant</a>
+                </li>
+              {% else %}
+                <li class="page-item disabled"><span class="page-link">Suivant</span></li>
+              {% endif %}
+            </ul>
+          </nav>
+        {% endif %}
+      {% else %}
+        <p class="mb-0">Aucun conteneur trouvé.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

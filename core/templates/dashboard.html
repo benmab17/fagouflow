@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Dashboard</title>
+  </head>
+  <body>
+    <h1>Dashboard</h1>
+    <section>
+      <h2>User</h2>
+      <p><strong>Name:</strong> {{ user.full_name }}</p>
+      <p><strong>Email:</strong> {{ user.email }}</p>
+      <p><strong>Role:</strong> {{ user.role }}</p>
+      <p><strong>Site:</strong> {{ user.site }}</p>
+    </section>
+
+    <section>
+      <h2>Last 5 Container Shipments</h2>
+      {% if shipments %}
+        <ul>
+          {% for shipment in shipments %}
+            <li>
+              <a href="{% url 'shipment_detail' shipment.id %}">{{ shipment.container_no }}</a> -
+              {{ shipment.status }} -
+              {{ shipment.destination_site|default:"(no destination site)" }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No shipments available.</p>
+      {% endif %}
+    </section>
+  </body>
+</html>

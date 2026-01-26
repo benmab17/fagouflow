@@ -1,0 +1,70 @@
+{% extends "ui/base.html" %}
+
+{% block title %}Mon profil - FagouFlow{% endblock %}
+
+{% block content %}
+  <div class="row g-4">
+    <div class="col-12 col-lg-5">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Mes informations</h5>
+          {% if user.avatar %}
+            <img src="{{ user.avatar.url }}" alt="Avatar" class="rounded mb-3" width="120" height="120" />
+          {% else %}
+            <div class="rounded bg-secondary text-white d-flex align-items-center justify-content-center mb-3" style="width:120px;height:120px;">
+              {{ user.full_name|default:user.email|slice:":1" }}
+            </div>
+          {% endif %}
+          <p class="mb-1"><strong>Email :</strong> {{ user.email }}</p>
+          <p class="mb-1"><strong>Nom complet :</strong> {{ user.full_name }}</p>
+          <p class="mb-1"><strong>Rôle :</strong> {{ user.role }}</p>
+          <p class="mb-0"><strong>Site :</strong> {{ user.site }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-7">
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <h5 class="card-title">Mettre à jour la photo</h5>
+          <form method="post" enctype="multipart/form-data" class="row g-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_avatar" />
+            <div class="col-12">
+              <label class="form-label" for="avatar">Photo de profil</label>
+              <input class="form-control" type="file" id="avatar" name="avatar" accept="image/*" required />
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary">Mettre à jour la photo</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Changer le mot de passe</h5>
+          <form method="post" class="row g-3">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="change_password" />
+            <div class="col-12">
+              <label class="form-label" for="old_password">Mot de passe actuel</label>
+              <input class="form-control" type="password" id="old_password" name="old_password" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="new_password">Nouveau mot de passe</label>
+              <input class="form-control" type="password" id="new_password" name="new_password" required />
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="confirm_password">Confirmer le nouveau mot de passe</label>
+              <input class="form-control" type="password" id="confirm_password" name="confirm_password" required />
+            </div>
+            <div class="col-12">
+              <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

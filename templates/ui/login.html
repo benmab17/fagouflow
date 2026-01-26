@@ -1,0 +1,37 @@
+{% extends "ui/base.html" %}
+
+{% block title %}Connexion - FagouFlow{% endblock %}
+
+{% block content %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-6 col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title mb-3">Connexion</h5>
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label" for="id_username">Email</label>
+              <input
+                class="form-control"
+                type="email"
+                name="username"
+                id="id_username"
+                value="{{ form.username.value|default_if_none:'' }}"
+                required
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="id_password">Mot de passe</label>
+              <input class="form-control" type="password" name="password" id="id_password" required />
+            </div>
+            {% if form.non_field_errors %}
+              <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <button type="submit" class="btn btn-primary w-100">Se connecter</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

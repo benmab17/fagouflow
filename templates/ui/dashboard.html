@@ -1,0 +1,110 @@
+{% extends "ui/base.html" %}
+
+{% block title %}Tableau de bord - FagouFlow{% endblock %}
+
+{% block content %}
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Total des conteneurs</div>
+          <div class="h4 mb-0">{{ total_shipments }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">En transit</div>
+          <div class="h4 mb-0">{{ in_transit }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Livrés</div>
+          <div class="h4 mb-0">{{ delivered }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="text-muted small">Valeur totale</div>
+          <div class="h4 mb-0">{{ total_value|floatformat:2 }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">Utilisateur</h5>
+          <p class="mb-1"><strong>Nom :</strong> {{ user.full_name }}</p>
+          <p class="mb-1"><strong>Email :</strong> {{ user.email }}</p>
+          <p class="mb-1"><strong>Rôle :</strong> {{ user.role }}</p>
+          <p class="mb-0"><strong>Site :</strong> {{ user.site }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-8">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h5 class="card-title">5 derniers conteneurs</h5>
+          {% if shipments %}
+            <div class="table-responsive">
+              <table class="table table-striped table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>Conteneur</th>
+                    <th>Statut</th>
+                    <th>Destination</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for shipment in shipments %}
+                    <tr>
+                      <td>
+                        <a href="{% url 'shipment_detail' shipment.id %}" class="text-decoration-none">
+                          {{ shipment.container_no }}
+                        </a>
+                      </td>
+                      <td>
+                        {% if shipment.status == "CREATED" %}
+                          <span class="badge text-bg-secondary">{{ shipment.status_label }}</span>
+                        {% elif shipment.status == "IN_TRANSIT" %}
+                          <span class="badge text-bg-warning">{{ shipment.status_label }}</span>
+                        {% elif shipment.status == "ARRIVED" %}
+                          <span class="badge text-bg-info">{{ shipment.status_label }}</span>
+                        {% elif shipment.status == "CLEARED" %}
+                          <span class="badge text-bg-primary">{{ shipment.status_label }}</span>
+                        {% elif shipment.status == "DELIVERED" %}
+                          <span class="badge text-bg-success">{{ shipment.status_label }}</span>
+                        {% else %}
+                          <span class="badge text-bg-light text-dark">{{ shipment.status }}</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if shipment.destination_site %}
+                          <span class="badge text-bg-dark">{{ shipment.destination_site }}</span>
+                        {% else %}
+                          <span class="badge text-bg-light text-dark">(aucun site)</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="mb-0">Aucun conteneur disponible.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

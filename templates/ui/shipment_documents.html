@@ -1,0 +1,119 @@
+{% extends "ui/base.html" %}
+
+{% block title %}Documents du conteneur - FagouFlow{% endblock %}
+
+{% block content %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Documents du conteneur</h5>
+      <p class="mb-0">
+        <strong>Conteneur :</strong> {{ shipment.container_no }} —
+        <strong>BL :</strong> {{ shipment.bl_no }}
+      </p>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Ajouter un document</h5>
+      <form method="post" enctype="multipart/form-data" class="row g-3">
+        {% csrf_token %}
+        <div class="col-12 col-md-4">
+          <label class="form-label" for="doc_type">Type</label>
+          <select class="form-select" id="doc_type" name="doc_type" required>
+            <option value="BL">BL</option>
+            <option value="INVOICE">Facture</option>
+            <option value="PACKING_LIST">Liste de colisage</option>
+            <option value="CUSTOMS">Douane</option>
+            <option value="PHOTO">Photo</option>
+            <option value="OTHER">Autre</option>
+          </select>
+        </div>
+        <div class="col-12 col-md-8">
+          <label class="form-label" for="file">Fichier</label>
+          <input class="form-control" type="file" id="file" name="file" required />
+        </div>
+        <div class="col-12">
+          <button type="submit" class="btn btn-primary">Uploader</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {% if share_url %}
+    <div class="alert alert-success d-flex align-items-center justify-content-between gap-2">
+      <div>
+        Lien de partage :
+        <a href="{{ share_url }}">{{ share_url }}</a>
+      </div>
+      <button class="btn btn-sm btn-outline-success" type="button" data-copy-link="{{ share_url }}">
+        Copier le lien
+      </button>
+    </div>
+  {% endif %}
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <h5 class="card-title">Liste des documents</h5>
+      {% if documents %}
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Type</th>
+                <th>Ajouté par</th>
+                <th>Version</th>
+                <th>Date</th>
+                <th>Partager</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for doc in documents %}
+                <tr>
+                  <td>
+                    <a href="{{ doc.file.url }}" class="text-decoration-none">{{ doc.file.name }}</a>
+                  </td>
+                  <td>{{ doc.doc_type }}</td>
+                  <td>{{ doc.uploaded_by.email|default:"Système" }}</td>
+                  <td>
+                    v{{ doc.version }}
+                    {% if doc.is_current %}
+                      <span class="badge text-bg-success">Actuel</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ doc.uploaded_at|date:"d/m/Y H:i" }}</td>
+                  <td>
+                    {% if doc.can_share %}
+                      <form method="post" class="d-inline">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="share" />
+                        <input type="hidden" name="document_id" value="{{ doc.id }}" />
+                        <button type="submit" class="btn btn-sm btn-outline-primary">Partager</button>
+                      </form>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="mb-0">Aucun document.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll("[data-copy-link]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const link = button.getAttribute("data-copy-link");
+        if (navigator.clipboard && link) {
+          navigator.clipboard.writeText(link);
+        }
+      });
+    });
+  </script>
+{% endblock %}

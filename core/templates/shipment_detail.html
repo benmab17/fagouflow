@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Shipment Detail</title>
+  </head>
+  <body>
+    <h1>Shipment Detail</h1>
+
+    <section>
+      <h2>Container</h2>
+      <p><strong>Container No:</strong> {{ shipment.container_no }}</p>
+      <p><strong>BL No:</strong> {{ shipment.bl_no }}</p>
+      <p><strong>Status:</strong> {{ shipment.status }}</p>
+      <p><strong>Origin Country:</strong> {{ shipment.origin_country }}</p>
+      <p><strong>Destination Type:</strong> {{ shipment.destination_type }}</p>
+      <p><strong>Destination Site:</strong> {{ shipment.destination_site|default:"(no destination site)" }}</p>
+      <p><strong>Client Name:</strong> {{ shipment.client_name|default:"(none)" }}</p>
+    </section>
+
+    <section>
+      <h2>Items</h2>
+      {% if items %}
+        <ul>
+          {% for item in items %}
+            <li>
+              {{ item.product.name }} -
+              {{ item.qty }} @ {{ item.unit_price }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No items.</p>
+      {% endif %}
+    </section>
+
+    <section>
+      <h2>Recent Audit Events</h2>
+      {% if audit_events %}
+        <ul>
+          {% for event in audit_events %}
+            <li>
+              {{ event.created_at }} - {{ event.action }} - {{ event.summary }}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p>No audit events.</p>
+      {% endif %}
+    </section>
+  </body>
+</html>
