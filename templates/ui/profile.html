@@ -1,6 +1,5 @@
 {% extends "ui/base.html" %}
 {% load static %}
-{% load avatar %}
 
 {% block title %}Mon profil - FagouFlow{% endblock %}
 
@@ -8,13 +7,23 @@
   <div class="row g-4">
     <div class="col-12 col-lg-5">
       <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title">Mes informations</h5>
-          <img src="{{ user|avatar_url }}" alt="Avatar" class="rounded mb-3" width="120" height="120" />
-          <p class="mb-1"><strong>Email :</strong> {{ user.email }}</p>
-          <p class="mb-1"><strong>Nom complet :</strong> {{ user.full_name }}</p>
-          <p class="mb-1"><strong>Rôle :</strong> {{ user.role }}</p>
-          <p class="mb-0"><strong>Site :</strong> {{ user.site }}</p>
+        <div class="card-body text-center">
+          <h5 class="card-title text-start mb-4">Mes informations</h5>
+          
+          <div class="mb-3">
+            {% if user.avatar %}
+              <img src="{{ user.avatar.url }}" alt="Avatar" class="rounded-circle border shadow-sm" width="150" height="150" style="object-fit: cover;">
+            {% else %}
+              <img src="{% static 'images/default-avatar.png' %}" alt="Avatar par défaut" class="rounded-circle border shadow-sm" width="150" height="150" style="object-fit: cover;">
+            {% endif %}
+          </div>
+
+          <div class="text-start mt-4">
+            <p class="mb-1"><strong>Email :</strong> {{ user.email }}</p>
+            <p class="mb-1"><strong>Nom complet :</strong> {{ user.full_name }}</p>
+            <p class="mb-1"><strong>Rôle :</strong> <span class="badge bg-info">{{ user.role }}</span></p>
+            <p class="mb-0"><strong>Site :</strong> <span class="badge bg-secondary">{{ user.site }}</span></p>
+          </div>
         </div>
       </div>
     </div>
@@ -27,11 +36,14 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="update_avatar" />
             <div class="col-12">
-              <label class="form-label" for="avatar">Photo de profil</label>
+              <label class="form-label" for="avatar">Choisir une nouvelle image</label>
               <input class="form-control" type="file" id="avatar" name="avatar" accept="image/*" required />
+              <div class="form-text">Format recommandé : JPG ou PNG.</div>
             </div>
             <div class="col-12">
-              <button type="submit" class="btn btn-primary">Mettre à jour la photo</button>
+              <button type="submit" class="btn btn-primary">
+                <i class="bi bi-upload"></i> Mettre à jour la photo
+              </button>
             </div>
           </form>
         </div>
@@ -56,7 +68,7 @@
               <input class="form-control" type="password" id="confirm_password" name="confirm_password" required />
             </div>
             <div class="col-12">
-              <button type="submit" class="btn btn-primary">Changer le mot de passe</button>
+              <button type="submit" class="btn btn-outline-primary">Changer le mot de passe</button>
             </div>
           </form>
         </div>
