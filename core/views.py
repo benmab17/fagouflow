@@ -14,7 +14,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
-# Modèles de l'application
+# Modeles de l'application
 from audit.models import AuditEvent
 from chat.models import ChatMessage
 from documents.models import Document, DocumentShare, DocumentSiteShare
@@ -28,19 +28,23 @@ STATUS_LABELS = {
     "DELIVERED": "Livre",
 }
 
+def get_visible_shipments(user):
+    """
+    Fonction utilitaire pour gerer la visibilite :
+    - BOSS, HQ_ADMIN et BE (Belgique) voient TOUT.
+    - Les autres voient leur site ou ce qui n'est pas encore assigne.
+    """
+    queryset = ContainerShipment.objects.all()
+    if user.role not in ("BOSS", "HQ_ADMIN") and user.site != "BE":
+        queryset = queryset.filter(
+            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
+        )
+    return queryset
+
 @login_required
 def dashboard(request):
     user = request.user
-    visible_shipments = ContainerShipment.objects.all()
-    
-    # LOGIQUE DE VISIBILITE : On autorise le site de l'user, le vide, et DLA (site de transit)
-    if user.role not in ("BOSS", "HQ_ADMIN"):
-        visible_shipments = visible_shipments.filter(
-            Q(destination_site=user.site) | 
-            Q(destination_site__isnull=True) | 
-            Q(destination_site="") |
-            Q(destination_site="DLA")
-        )
+    visible_shipments = get_visible_shipments(user)
     
     shipments = list(visible_shipments.order_by("-created_at")[:5])
     for shipment in shipments:
@@ -71,88 +75,48 @@ def dashboard(request):
 @login_required
 def shipment_detail(request, shipment_id: int):
     user = request.user
-    shipments = ContainerShipment.objects.all()
-    
-    if user.role not in ("BOSS", "HQ_ADMIN"):
-        shipments = shipments.filter(
-            Q(destination_site=user.site) | 
-            Q(destination_site__isnull=True) | 
-            Q(destination_site="") |
-            Q(destination_site="DLA")
-        )
-    
-    shipment = get_object_or_404(shipments, pk=shipment_id)
+    visible_shipments = get_visible_shipments(user)
+    shipment = get_object_or_404(visible_shipments, pk=shipment_id)
     shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
     
     if request.method == "POST":
         action = request.POST.get("action")
         form_name = request.POST.get("form_name")
-
         if form_name == "chat":
             body = (request.POST.get("body") or "").strip()
             if body:
-                ChatMessage.objects.create(
-                    shipment=shipment,
-                    author=user,
-                    site=user.site or "BE",
-                    body=body,
-                )
+                ChatMessage.objects.create(shipment=shipment, author=user, site=user.site or "BE", body=body)
                 return redirect(f"/shipments/{shipment_id}/#chat")
-
         elif action == "upload":
             title = (request.POST.get("title") or "").strip()
             uploaded_file = request.FILES.get("file")
             if title and uploaded_file:
-                Document.objects.create(
-                    linked_shipment=shipment,
-                    title=title,
-                    doc_type="AUTRE",
-                    file=uploaded_file,
-                    uploaded_by=user,
-                )
+                Document.objects.create(linked_shipment=shipment, title=title, doc_type="AUTRE", file=uploaded_file, uploaded_by=user)
                 messages.success(request, "Document ajoute.")
             return redirect(f"/shipments/{shipment_id}/")
 
     items = shipment.items.select_related("product").all()
-    for item in items:
-        item.line_total = item.qty * item.unit_price
-
+    for item in items: item.line_total = item.qty * item.unit_price
     documents = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
     chat_messages = ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at")
 
-    context = {
-        "shipment": shipment,
-        "items": items,
-        "documents": documents,
-        "chat_messages": chat_messages,
-    }
+    context = {"shipment": shipment, "items": items, "documents": documents, "chat_messages": chat_messages}
     return render(request, "ui/shipment_info.html", context)
 
 @login_required
 def shipments_list(request):
     user = request.user
-    shipments = ContainerShipment.objects.all()
-    
-    if user.role not in ("BOSS", "HQ_ADMIN"):
-        shipments = shipments.filter(
-            Q(destination_site=user.site) | 
-            Q(destination_site__isnull=True) | 
-            Q(destination_site="") |
-            Q(destination_site="DLA")
-        )
+    shipments = get_visible_shipments(user)
 
     status = request.GET.get("status", "").strip()
     site = request.GET.get("site", "").strip()
     date_value = request.GET.get("date", "").strip()
 
-    if status:
-        shipments = shipments.filter(status=status)
-    if site:
-        shipments = shipments.filter(destination_site=site)
+    if status: shipments = shipments.filter(status=status)
+    if site: shipments = shipments.filter(destination_site=site)
     if date_value:
         parsed_date = parse_date(date_value)
-        if parsed_date:
-            shipments = shipments.filter(Q(etd=parsed_date) | Q(created_at__date=parsed_date))
+        if parsed_date: shipments = shipments.filter(Q(etd=parsed_date) | Q(created_at__date=parsed_date))
 
     shipments = shipments.order_by("-created_at")
     paginator = Paginator(shipments, 20)
@@ -161,42 +125,12 @@ def shipments_list(request):
     for shipment in page_obj:
         shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
 
-    context = {
-        "shipments": page_obj,
-        "page_obj": page_obj,
-        "status": status,
-        "site": site,
-        "date": date_value,
-    }
+    context = {"shipments": page_obj, "page_obj": page_obj, "status": status, "site": site, "date": date_value}
     return render(request, "ui/shipments_list.html", context)
 
 @login_required
 def profile_view(request):
-    user = request.user
-    if request.method == "POST":
-        action = request.POST.get("action")
-        if action == "update_avatar":
-            avatar = request.FILES.get("avatar")
-            if avatar:
-                user.avatar = avatar
-                user.save(update_fields=["avatar"])
-                messages.success(request, "Photo mise a jour.")
-            return redirect("/profile/")
-        
-        if action == "change_password":
-            old_p = request.POST.get("old_password")
-            new_p = request.POST.get("new_password")
-            conf_p = request.POST.get("confirm_password")
-            if user.check_password(old_p) and new_p == conf_p:
-                user.set_password(new_p)
-                user.save()
-                update_session_auth_hash(request, user)
-                messages.success(request, "Mot de passe modifie.")
-            else:
-                messages.error(request, "Erreur dans les mots de passe.")
-            return redirect("/profile/")
-            
-    return render(request, "ui/profile.html", {"user": user})
+    return render(request, "ui/profile.html", {"user": request.user})
 
 def logout_view(request):
     auth_logout(request)
