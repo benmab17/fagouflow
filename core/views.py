@@ -32,13 +32,11 @@ STATUS_LABELS = {
 def dashboard(request):
     user = request.user
     visible_shipments = ContainerShipment.objects.all()
-    
-    # MODIFICATION : On ajoute "ou si le site est BE"
+    # Règle Germaine : Si pas BOSS/ADMIN ET pas site BE, on filtre
     if user.role not in ("BOSS", "HQ_ADMIN") and getattr(user, 'site', '') != "BE":
         visible_shipments = visible_shipments.filter(
             Q(destination_site=user.site) | Q(destination_site__isnull=True)
         )
-        
     shipments = list(visible_shipments.order_by("-created_at")[:5])
     for shipment in shipments:
         shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
@@ -54,14 +52,9 @@ def dashboard(request):
             )
         )["total"] or 0
     )
-    
     context = {
-        "user": user,
-        "shipments": shipments,
-        "total_shipments": total_shipments,
-        "in_transit": in_transit,
-        "delivered": delivered,
-        "total_value": total_value,
+        "user": user, "shipments": shipments, "total_shipments": total_shipments,
+        "in_transit": in_transit, "delivered": delivered, "total_value": total_value,
     }
     return render(request, "ui/dashboard.html", context)
 
@@ -69,8 +62,6 @@ def dashboard(request):
 def shipment_detail(request, shipment_id: int):
     user = request.user
     shipments = ContainerShipment.objects.all()
-    
-    # MODIFICATION : On ajoute "ou si le site est BE"
     if user.role not in ("BOSS", "HQ_ADMIN") and getattr(user, 'site', '') != "BE":
         shipments = shipments.filter(Q(destination_site=user.site) | Q(destination_site__isnull=True))
     
@@ -78,86 +69,42 @@ def shipment_detail(request, shipment_id: int):
     shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
     
     if request.method == "POST":
-        action = request.POST.get("action")
         form_name = request.POST.get("form_name")
-
         if form_name == "chat":
             body = (request.POST.get("body") or "").strip()
             if body:
-                ChatMessage.objects.create(
-                    shipment=shipment,
-                    author=user,
-                    site=user.site or "BE",
-                    body=body,
-                )
+                ChatMessage.objects.create(shipment=shipment, author=user, site=user.site or "BE", body=body)
                 return redirect(f"/shipments/{shipment_id}/#chat")
-
-        elif action == "upload":
-            title = (request.POST.get("title") or "").strip()
-            uploaded_file = request.FILES.get("file")
+        elif request.POST.get("action") == "upload":
+            title, uploaded_file = request.POST.get("title", "").strip(), request.FILES.get("file")
             if title and uploaded_file:
-                Document.objects.create(
-                    linked_shipment=shipment,
-                    title=title,
-                    doc_type="AUTRE",
-                    file=uploaded_file,
-                    uploaded_by=user,
-                )
+                Document.objects.create(linked_shipment=shipment, title=title, doc_type="AUTRE", file=uploaded_file, uploaded_by=user)
                 messages.success(request, "Document ajouté.")
             return redirect(f"/shipments/{shipment_id}/")
 
     items = shipment.items.select_related("product").all()
-    for item in items:
-        item.line_total = item.qty * item.unit_price
-
+    for item in items: item.line_total = item.qty * item.unit_price
     documents = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
     chat_messages = ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at")
-
-    context = {
-        "shipment": shipment,
-        "items": items,
-        "documents": documents,
-        "chat_messages": chat_messages,
-    }
-    return render(request, "ui/shipment_info.html", context)
+    return render(request, "ui/shipment_info.html", {"shipment": shipment, "items": items, "documents": documents, "chat_messages": chat_messages})
 
 @login_required
 def shipments_list(request):
     user = request.user
     shipments = ContainerShipment.objects.all()
-    
-    # MODIFICATION : On ajoute "ou si le site est BE"
     if user.role not in ("BOSS", "HQ_ADMIN") and getattr(user, 'site', '') != "BE":
         shipments = shipments.filter(Q(destination_site=user.site) | Q(destination_site__isnull=True))
 
-    status = request.GET.get("status", "").strip()
-    site = request.GET.get("site", "").strip()
-    date_value = request.GET.get("date", "").strip()
+    status, site, date_val = request.GET.get("status", ""), request.GET.get("site", ""), request.GET.get("date", "")
+    if status: shipments = shipments.filter(status=status)
+    if site: shipments = shipments.filter(destination_site=site)
+    if date_val:
+        p_date = parse_date(date_val)
+        if p_date: shipments = shipments.filter(Q(etd=p_date) | Q(created_at__date=p_date))
 
-    if status:
-        shipments = shipments.filter(status=status)
-    if site:
-        shipments = shipments.filter(destination_site=site)
-    if date_value:
-        parsed_date = parse_date(date_value)
-        if parsed_date:
-            shipments = shipments.filter(Q(etd=parsed_date) | Q(created_at__date=parsed_date))
-
-    shipments = shipments.order_by("-created_at")
-    paginator = Paginator(shipments, 20)
-    page_obj = paginator.get_page(request.GET.get("page"))
-
-    for shipment in page_obj:
-        shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
-
-    context = {
-        "shipments": page_obj,
-        "page_obj": page_obj,
-        "status": status,
-        "site": site,
-        "date": date_value,
-    }
-    return render(request, "ui/shipments_list.html", context)
+    page_obj = Paginator(shipments.order_by("-created_at"), 20).get_page(request.GET.get("page"))
+    for s in page_obj: s.status_label = STATUS_LABELS.get(s.status, s.status)
+    return render(request, "ui/shipments_list.html", {"shipments": page_obj, "page_obj": page_obj, "status": status, "site": site, "date": date_val})
 
 @login_required
 def shipment_documents(request, shipment_id: int):
@@ -170,72 +117,29 @@ def shipment_documents(request, shipment_id: int):
     if request.method == "POST":
         if request.POST.get("action") == "share":
             doc_id = request.POST.get("document_id")
-            document = Document.objects.filter(linked_shipment=shipment, pk=doc_id).first()
-            can_share = user.role in ("BOSS", "HQ_ADMIN") or (document and document.uploaded_by_id == user.id)
-            if not document or not can_share:
-                messages.error(request, "Accès refusé.")
-            else:
-                share = DocumentShare.objects.create(
-                    document=document,
-                    expire_at=timezone.now() + timedelta(days=7),
-                    created_by=user,
-                )
-                AuditEvent.objects.create(
-                    actor=user,
-                    action="UPDATE",
-                    entity_type="Document",
-                    entity_id=str(document.pk),
-                    site=shipment.destination_site or "",
-                    summary="Document partagé",
-                )
+            doc = Document.objects.filter(linked_shipment=shipment, pk=doc_id).first()
+            if doc and (user.role in ("BOSS", "HQ_ADMIN") or doc.uploaded_by_id == user.id):
+                share = DocumentShare.objects.create(document=doc, expire_at=timezone.now() + timedelta(days=7), created_by=user)
                 return redirect(f"/shipments/{shipment_id}/documents/?shared={share.token}")
         else:
-            doc_type = request.POST.get("doc_type")
-            uploaded_file = request.FILES.get("file")
-            if not doc_type or not uploaded_file:
-                messages.error(request, "Veuillez fournir un type et un fichier.")
-            else:
-                existing_docs = Document.objects.filter(linked_shipment=shipment, doc_type=doc_type)
-                next_version = (existing_docs.order_by("-version").first().version + 1) if existing_docs.exists() else 1
-                existing_docs.update(is_current=False)
-                Document.objects.create(
-                    linked_shipment=shipment,
-                    doc_type=doc_type,
-                    file=uploaded_file,
-                    uploaded_by=user,
-                    version=next_version,
-                    is_current=True,
-                )
-                messages.success(request, "Nouveau document ajouté")
-                return redirect(f"/shipments/{shipment_id}/documents/")
+            d_type, f = request.POST.get("doc_type"), request.FILES.get("file")
+            if d_type and f:
+                ex = Document.objects.filter(linked_shipment=shipment, doc_type=d_type)
+                v = (ex.order_by("-version").first().version + 1) if ex.exists() else 1
+                ex.update(is_current=False)
+                Document.objects.create(linked_shipment=shipment, doc_type=d_type, file=f, uploaded_by=user, version=v, is_current=True)
+                messages.success(request, "Document ajouté")
+            return redirect(f"/shipments/{shipment_id}/documents/")
 
-    documents = list(Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at"))
-    for doc in documents:
-        doc.can_share = user.role in ("BOSS", "HQ_ADMIN") or doc.uploaded_by_id == user.id
-    shared_token = request.GET.get("shared")
-    share_url = None
-    if shared_token:
-        share_url = request.build_absolute_uri(f"/documents/share/{shared_token}/")
-    context = {"shipment": shipment, "documents": documents, "share_url": share_url}
-    return render(request, "ui/shipment_documents.html", context)
+    docs = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
+    token = request.GET.get("shared")
+    url = request.build_absolute_uri(f"/documents/share/{token}/") if token else None
+    return render(request, "ui/shipment_documents.html", {"shipment": shipment, "documents": docs, "share_url": url})
 
 def document_share_view(request, token: str):
-    share = DocumentShare.objects.select_related("document", "document__linked_shipment").filter(token=token).first()
-    if not share:
-        return render(request, "ui/document_share_invalid.html", {"message": "Lien invalide."})
-    if share.expire_at < timezone.now():
-        return render(request, "ui/document_share_invalid.html", {"message": "Lien expiré."})
-    document = share.document
-    shipment = document.linked_shipment
-    AuditEvent.objects.create(
-        actor=share.created_by if share.created_by_id else (request.user if request.user.is_authenticated else None),
-        action="UPDATE",
-        entity_type="Document",
-        entity_id=str(document.pk),
-        site=(shipment.destination_site if shipment and shipment.destination_site else "BE"),
-        summary=f"Accessed shared document {document.pk}",
-    )
-    return FileResponse(document.file.open("rb"))
+    share = DocumentShare.objects.filter(token=token).first()
+    if not share or share.expire_at < timezone.now(): return render(request, "ui/document_share_invalid.html")
+    return FileResponse(share.document.file.open("rb"))
 
 def logout_view(request):
     auth_logout(request)
@@ -243,74 +147,19 @@ def logout_view(request):
 
 class RoleLoginView(LoginView):
     template_name = "ui/login.html"
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        user = self.request.user
-        display_name = getattr(user, 'full_name', None) or user.get_full_name() or user.username
-        messages.success(self.request, f"Bienvenue {display_name}")
-        return response
-    def get_success_url(self):
-        return reverse_lazy("dashboard")
+    def get_success_url(self): return reverse_lazy("dashboard")
 
 @login_required
 def profile_view(request):
     user = request.user
-    if request.method == "POST":
-        action = request.POST.get("action")
-        if action == "update_avatar":
-            avatar = request.FILES.get("avatar")
-            if avatar:
-                user.avatar = avatar
-                user.save(update_fields=["avatar"])
-                messages.success(request, "Photo de profil mise à jour.")
-            return redirect("/profile/")
-        if action == "change_password":
-            old_p = request.POST.get("old_password") or ""
-            new_p = request.POST.get("new_password") or ""
-            conf_p = request.POST.get("confirm_password") or ""
-            if user.check_password(old_p) and new_p == conf_p:
-                user.set_password(new_p)
-                user.save(update_fields=["password"])
-                update_session_auth_hash(request, user)
-                messages.success(request, "Mot de passe mis à jour.")
-            else:
-                messages.error(request, "Erreur dans les mots de passe.")
-            return redirect("/profile/")
+    if request.method == "POST" and request.POST.get("action") == "update_avatar":
+        if request.FILES.get("avatar"):
+            user.avatar = request.FILES.get("avatar")
+            user.save(update_fields=["avatar"])
+            messages.success(request, "Photo mise à jour.")
     return render(request, "ui/profile.html", {"user": user})
 
 @login_required
 def reports_view(request):
-    user = request.user
-    if user.role not in ("BOSS", "HQ_ADMIN"):
-        messages.error(request, "Accès refusé")
-        return redirect("/dashboard/")
-    today = timezone.localdate()
-    period = request.GET.get("period", "week")
-    start_date = today - timedelta(days=29) if period == "month" else today - timedelta(days=6)
-    period_label = "Mois" if period == "month" else "Semaine"
-
-    period_shipments = ContainerShipment.objects.filter(created_at__date__gte=start_date, created_at__date__lte=today)
-    period_total = period_shipments.count()
-    period_value = (
-        ContainerItem.objects.filter(shipment__in=period_shipments).aggregate(
-            total=Sum(ExpressionWrapper(F("qty") * F("unit_price"), output_field=DecimalField(max_digits=20, decimal_places=2)))
-        )["total"] or 0
-    )
-
-    if request.GET.get("export") == "csv":
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = f'attachment; filename="rapport_{period}.csv"'
-        writer = csv.writer(response)
-        writer.writerow(["Periode", "Total", "Valeur"])
-        writer.writerow([period_label, period_total, f"{period_value:.2f}"])
-        return response
-
-    context = {
-        "today": today,
-        "period": period,
-        "period_label": period_label,
-        "period_total": period_total,
-        "period_value": period_value,
-        "start_date": start_date,
-    }
-    return render(request, "ui/reports.html", context)
+    if request.user.role not in ("BOSS", "HQ_ADMIN"): return redirect("/dashboard/")
+    return render(request, "ui/reports.html", {"today": timezone.localdate()})
