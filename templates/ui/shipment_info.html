@@ -4,22 +4,37 @@
 {% block content %}
 <div class="container" style="max-width: 1100px; margin-top: 25px;">
 
+  <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white shadow-sm" style="border-radius: 10px;">
+    <div class="d-flex align-items-center">
+        <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=random&rounded=true" width="50" height="50" class="me-3">
+        <div>
+            <h5 class="mb-0">{{ request.user.username }}</h5>
+            <small class="text-muted">{{ request.user.email }}</small>
+        </div>
+    </div>
+    <div>
+        <a href="{% url 'profile' %}" class="btn btn-outline-secondary btn-sm">Paramètres profil</a>
+    </div>
+  </div>
+
+  <hr>
+
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h2>Détails du Conteneur</h2>
     <span class="badge bg-primary">Statut: {{ shipment.status }}</span>
   </div>
   
-  <div class="card shadow-sm mb-4" style="border-radius: 10px; border: none;">
+  <div class="card shadow-sm mb-4 border-0">
     <div class="card-body bg-light" style="border-radius: 10px;">
       <div class="row">
         <div class="col-md-6 border-end">
-          <h6 class="text-muted text-uppercase small">Expéditeur / Origine</h6>
+          <h6 class="text-muted text-uppercase small fw-bold">Expéditeur / Origine</h6>
           <p class="mb-1"><b>Client :</b> {{ shipment.client_name|default:"-" }}</p>
           <p class="mb-1"><b>Pays :</b> {{ shipment.origin_country|default:"-" }}</p>
           <p class="mb-0"><b>N° Conteneur :</b> {{ shipment.container_no|default:"-" }}</p>
         </div>
         <div class="col-md-6 ps-4">
-          <h6 class="text-muted text-uppercase small">Destinataire / Destination</h6>
+          <h6 class="text-muted text-uppercase small fw-bold">Destinataire / Destination</h6>
           <p class="mb-1"><b>Site :</b> {{ shipment.destination_site|default:"Non spécifié" }}</p>
           <p class="mb-1"><b>N° BL :</b> {{ shipment.bl_no|default:"-" }}</p>
           <p class="mb-0"><b>Date :</b> {{ shipment.created_at|date:"d/m/Y" }}</p>
@@ -28,16 +43,22 @@
     </div>
   </div>
 
-  <div class="card shadow-sm mb-4" style="border-radius: 10px;">
-    <div class="card-header bg-white py-3">
+  <div class="card shadow-sm mb-4 border-0">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Documents de transport</h5>
+        {% if share_url %}
+        <div class="d-flex align-items-center">
+            <input type="text" id="shareInput" value="{{ share_url }}" readonly class="form-control form-control-sm me-2" style="width: 200px;">
+            <button class="btn btn-sm btn-success" onclick="copyShareLink()">Copier lien</button>
+        </div>
+        {% endif %}
     </div>
     <div class="card-body">
         <form method="post" action="{% url 'shipment_documents' shipment.id %}" enctype="multipart/form-data" class="row g-2 mb-4">
           {% csrf_token %}
           <input type="hidden" name="action" value="upload">
           <div class="col-md-4">
-            <input type="text" name="doc_type" placeholder="Nom du document (ex: Facture)" class="form-control" required>
+            <input type="text" name="doc_type" placeholder="Nom du document" class="form-control" required>
           </div>
           <div class="col-md-5">
             <input type="file" name="file" class="form-control" required>
@@ -62,7 +83,15 @@
                     <td><b>{{ d.doc_type }}</b><br><small class="text-muted">{{ d.uploaded_at|date:"d/m H:i" }}</small></td>
                     <td><span class="badge bg-secondary">v{{ d.version }}</span></td>
                     <td class="text-end">
-                        <a class="btn btn-sm btn-outline-primary" href="{{ d.file.url }}" target="_blank">Voir</a>
+                        <div class="btn-group">
+                            <a class="btn btn-sm btn-outline-primary" href="{{ d.file.url }}" target="_blank">Voir</a>
+                            <form method="post" action="{% url 'shipment_documents' shipment.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="share">
+                                <input type="hidden" name="document_id" value="{{ d.id }}">
+                                <button class="btn btn-sm btn-outline-secondary" type="submit">Partager</button>
+                            </form>
+                        </div>
                     </td>
                   </tr>
                 {% endfor %}
@@ -76,49 +105,43 @@
   <div class="card shadow-sm border-0" style="border-radius: 15px; background-color: #e5ddd5; overflow: hidden;">
       <div id="chat-box" style="height: 400px; overflow-y: auto; padding: 20px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');">
           {% for msg in chat_messages %}
-              {% if msg.author == request.user %}
-                  <div class="d-flex justify-content-end mb-3">
-                      <div class="d-flex align-items-start shadow-sm p-2" style="max-width: 75%; background-color: #dcf8c6; border-radius: 10px 0px 10px 10px;">
-                          <div class="me-2">
-                              <div class="small fw-bold text-success text-end">Moi</div>
-                              <div style="font-size: 0.95rem;">{{ msg.body }}</div>
-                              <div class="text-end" style="font-size: 0.7rem; color: #999;">{{ msg.created_at|date:"H:i" }}</div>
+              <div class="d-flex {% if msg.author == request.user %}justify-content-end{% else %}justify-content-start{% endif %} mb-3">
+                  <div class="d-flex align-items-start p-2 shadow-sm" style="max-width: 75%; border-radius: 12px; {% if msg.author == request.user %}background-color: #dcf8c6;{% else %}background-color: #ffffff;{% endif %}">
+                      {% if msg.author != request.user %}
+                        <img src="https://ui-avatars.com/api/?name={{ msg.author.username }}&background=128C7E&color=fff&rounded=true" width="30" height="30" class="rounded-circle me-2">
+                      {% endif %}
+                      <div>
+                          <div class="small fw-bold {% if msg.author == request.user %}text-success text-end{% else %}text-primary{% endif %}">
+                            {% if msg.author == request.user %}Moi{% else %}{{ msg.author.username }}{% endif %}
                           </div>
-                          <img src="https://ui-avatars.com/api/?name={{ msg.author.username }}&background=075E54&color=fff&rounded=true" width="30" height="30" class="rounded-circle">
+                          <div style="font-size: 0.95rem; word-wrap: break-word;">{{ msg.body }}</div>
+                          <div class="{% if msg.author == request.user %}text-end{% endif %}" style="font-size: 0.7rem; color: #999;">{{ msg.created_at|date:"H:i" }}</div>
                       </div>
+                      {% if msg.author == request.user %}
+                        <img src="https://ui-avatars.com/api/?name={{ msg.author.username }}&background=075E54&color=fff&rounded=true" width="30" height="30" class="rounded-circle ms-2">
+                      {% endif %}
                   </div>
-              {% else %}
-                  <div class="d-flex justify-content-start mb-3">
-                      <div class="d-flex align-items-start shadow-sm p-2" style="max-width: 75%; background-color: #ffffff; border-radius: 0px 10px 10px 10px;">
-                          <img src="https://ui-avatars.com/api/?name={{ msg.author.username }}&background=128C7E&color=fff&rounded=true" width="30" height="30" class="rounded-circle me-2">
-                          <div>
-                              <div class="small fw-bold text-primary">{{ msg.author.username }}</div>
-                              <div style="font-size: 0.95rem;">{{ msg.body }}</div>
-                              <div class="text-start" style="font-size: 0.7rem; color: #999;">{{ msg.created_at|date:"H:i" }}</div>
-                          </div>
-                      </div>
-                  </div>
-              {% endif %}
-          {% empty %}
-              <div class="text-center py-5 text-muted">Commencez la discussion...</div>
+              </div>
           {% endfor %}
       </div>
-
       <div class="p-3 bg-light border-top">
           <form method="post" action="{% url 'shipment_detail' shipment.id %}#chat" class="d-flex gap-2">
               {% csrf_token %}
               <input type="hidden" name="form_name" value="chat">
               <input class="form-control rounded-pill border-0 shadow-sm" type="text" name="body" placeholder="Tapez un message..." required>
-              <button class="btn btn-success rounded-circle shadow-sm" type="submit" style="width: 45px; height: 45px;">
-                  <i class="bi bi-send"></i>➤
-              </button>
+              <button class="btn btn-success rounded-pill px-4 shadow-sm" type="submit">Envoyer</button>
           </form>
       </div>
   </div>
-
 </div>
 
 <script>
+  function copyShareLink() {
+    var copyText = document.getElementById("shareInput");
+    copyText.select();
+    document.execCommand("copy");
+    alert("Lien de partage copié !");
+  }
   window.onload = function() {
     var chatBox = document.getElementById("chat-box");
     if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
