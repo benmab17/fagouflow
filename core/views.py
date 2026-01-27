@@ -10,11 +10,9 @@ from django.core.paginator import Paginator
 from django.db.models import DecimalField, ExpressionWrapper, F, Q, Sum
 from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy  # Important pour get_success_url
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-from django.contrib.auth.decorators import login_required
-
 
 # Modèles de l'application
 from audit.models import AuditEvent
@@ -23,36 +21,40 @@ from documents.models import Document, DocumentShare, DocumentSiteShare
 from logistics.models import ContainerShipment, ContainerItem
 
 STATUS_LABELS = {
-    "CREATED": "Créé",
+    "CREATED": "Cree",
     "IN_TRANSIT": "En transit",
-    "ARRIVED": "Arrivé",
-    "CLEARED": "Dédouané",
-    "DELIVERED": "Livré",
+    "ARRIVED": "Arrive",
+    "CLEARED": "Dedouane",
+    "DELIVERED": "Livre",
 }
-
 
 @login_required
 def dashboard(request):
     user = request.user
     visible_shipments = ContainerShipment.objects.all()
+    
+    # LOGIQUE DE VISIBILITE : On ajoute le filtre "isnull" pour voir les nouveaux conteneurs de l'Admin
     if user.role not in ("BOSS", "HQ_ADMIN"):
         visible_shipments = visible_shipments.filter(
-            Q(destination_site=user.site) | Q(destination_site__isnull=True)
+            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
         )
+    
     shipments = list(visible_shipments.order_by("-created_at")[:5])
     for shipment in shipments:
         shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
+    
     total_shipments = visible_shipments.count()
     in_transit = visible_shipments.filter(status="IN_TRANSIT").count()
     delivered = visible_shipments.filter(status="DELIVERED").count()
+    
     total_value = (
         ContainerItem.objects.filter(shipment__in=visible_shipments).aggregate(
             total=Sum(
                 ExpressionWrapper(F("qty") * F("unit_price"), output_field=DecimalField(max_digits=20, decimal_places=2))
             )
-        )["total"]
-        or 0
+        )["total"] or 0
     )
+    
     context = {
         "user": user,
         "shipments": shipments,
@@ -68,19 +70,20 @@ def shipment_detail(request, shipment_id: int):
     user = request.user
     shipments = ContainerShipment.objects.all()
     
-    # Filtrage selon les droits
+    # Filtrage selon les droits (Cohérence avec le dashboard)
     if user.role not in ("BOSS", "HQ_ADMIN"):
-        shipments = shipments.filter(Q(destination_site=user.site) | Q(destination_site__isnull=True))
+        shipments = shipments.filter(
+            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
+        )
     
     shipment = get_object_or_404(shipments, pk=shipment_id)
     shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
     
-    # Gestion du POST
     if request.method == "POST":
         action = request.POST.get("action")
         form_name = request.POST.get("form_name")
 
-        # --- ACTION : ENVOYER UN MESSAGE ---
+        # --- ACTION : MESSAGE CHAT ---
         if form_name == "chat":
             body = (request.POST.get("body") or "").strip()
             if body:
@@ -92,23 +95,22 @@ def shipment_detail(request, shipment_id: int):
                 )
                 return redirect(f"/shipments/{shipment_id}/#chat")
 
-        # --- ACTION : UPLOAD DE DOCUMENT ---
+        # --- ACTION : UPLOAD DOCUMENT ---
         elif action == "upload":
             title = (request.POST.get("title") or "").strip()
             uploaded_file = request.FILES.get("file")
-            
             if title and uploaded_file:
                 Document.objects.create(
                     linked_shipment=shipment,
                     title=title,
-                    doc_type="AUTRE", # Valeur par defaut pour eviter l'erreur
+                    doc_type="AUTRE",
                     file=uploaded_file,
                     uploaded_by=user,
                 )
                 messages.success(request, "Document ajoute.")
             return redirect(f"/shipments/{shipment_id}/")
 
-    # --- PREPARATION DES DONNEES ---
+    # Preparation des donnees pour l'affichage
     items = shipment.items.select_related("product").all()
     for item in items:
         item.line_total = item.qty * item.unit_price
@@ -122,17 +124,17 @@ def shipment_detail(request, shipment_id: int):
         "documents": documents,
         "chat_messages": chat_messages,
     }
-    
     return render(request, "ui/shipment_info.html", context)
-
-
 
 @login_required
 def shipments_list(request):
     user = request.user
     shipments = ContainerShipment.objects.all()
+    
     if user.role not in ("BOSS", "HQ_ADMIN"):
-        shipments = shipments.filter(Q(destination_site=user.site) | Q(destination_site__isnull=True))
+        shipments = shipments.filter(
+            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
+        )
 
     status = request.GET.get("status", "").strip()
     site = request.GET.get("site", "").strip()
@@ -163,129 +165,6 @@ def shipments_list(request):
     }
     return render(request, "ui/shipments_list.html", context)
 
-
-@login_required
-def shipment_documents(request, shipment_id: int):
-    user = request.user
-    shipments = ContainerShipment.objects.all()
-    if user.role not in ("BOSS", "HQ_ADMIN"):
-        shipments = shipments.filter(Q(destination_site=user.site) | Q(destination_site__isnull=True))
-    shipment = get_object_or_404(shipments, pk=shipment_id)
-
-    if request.method == "POST":
-        if request.POST.get("action") == "share":
-            doc_id = request.POST.get("document_id")
-            document = Document.objects.filter(linked_shipment=shipment, pk=doc_id).first()
-            can_share = user.role in ("BOSS", "HQ_ADMIN") or (document and document.uploaded_by_id == user.id)
-            if not document or not can_share:
-                messages.error(request, "Accès refusé.")
-            else:
-                share = DocumentShare.objects.create(
-                    document=document,
-                    expire_at=timezone.now() + timedelta(days=7),
-                    created_by=user,
-                )
-                AuditEvent.objects.create(
-                    actor=user,
-                    action="UPDATE",
-                    entity_type="Document",
-                    entity_id=str(document.pk),
-                    site=shipment.destination_site or "",
-                    summary="Document partagé",
-                )
-                return redirect(f"/shipments/{shipment_id}/documents/?shared={share.token}")
-        else:
-            doc_type = request.POST.get("doc_type")
-            uploaded_file = request.FILES.get("file")
-            if not doc_type or not uploaded_file:
-                messages.error(request, "Veuillez fournir un type et un fichier.")
-            else:
-                existing_docs = Document.objects.filter(
-                    linked_shipment=shipment, doc_type=doc_type
-                )
-                next_version = (existing_docs.order_by("-version").first().version + 1) if existing_docs.exists() else 1
-                existing_docs.update(is_current=False)
-                Document.objects.create(
-                    linked_shipment=shipment,
-                    doc_type=doc_type,
-                    file=uploaded_file,
-                    uploaded_by=user,
-                    version=next_version,
-                    is_current=True,
-                )
-                messages.success(request, "Nouveau document ajouté")
-                return redirect(f"/shipments/{shipment_id}/documents/")
-
-    documents = list(
-        Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
-    )
-    for doc in documents:
-        doc.can_share = user.role in ("BOSS", "HQ_ADMIN") or doc.uploaded_by_id == user.id
-    shared_token = request.GET.get("shared")
-    share_url = None
-    if shared_token:
-        share_url = request.build_absolute_uri(f"/documents/share/{shared_token}/")
-    context = {"shipment": shipment, "documents": documents, "share_url": share_url}
-    return render(request, "ui/shipment_documents.html", context)
-
-
-def document_share_view(request, token: str):
-    share = DocumentShare.objects.select_related("document", "document__linked_shipment").filter(token=token).first()
-    if not share:
-        return render(request, "ui/document_share_invalid.html", {"message": "Lien invalide."})
-    if share.expire_at < timezone.now():
-        return render(request, "ui/document_share_invalid.html", {"message": "Lien expiré."})
-    document = share.document
-    shipment = document.linked_shipment
-    AuditEvent.objects.create(
-        actor=share.created_by if share.created_by_id else (request.user if request.user.is_authenticated else None),
-        action="UPDATE",
-        entity_type="Document",
-        entity_id=str(document.pk),
-        site=(shipment.destination_site if shipment and shipment.destination_site else "BE"),
-        summary=f"Accessed shared document {document.pk}",
-    )
-    return FileResponse(document.file.open("rb"))
-
-
-def logout_view(request):
-    auth_logout(request)
-    return redirect("/login/")
-
-class RoleLoginView(LoginView):
-    template_name = "ui/login.html"
-
-    def form_valid(self, form):
-        # 1. Appelle la logique de connexion parente (crée la session)
-        response = super().form_valid(form)
-        
-        # 2. Récupère l'utilisateur qui vient de se connecter
-        user = self.request.user
-        
-        # 3. Sécurité : getattr(objet, 'nom_attribut', valeur_par_defaut)
-        # Si 'full_name' n'existe pas dans ton modèle User, il prendra l'username
-        # Cela évite l'AttributeError qui cause la 500
-        display_name = getattr(user, 'full_name', None) or user.get_full_name() or user.username
-        
-        # 4. Ajoute le message de succès
-        messages.success(self.request, f"Bienvenue {display_name}")
-        
-        return response
-
-    def get_success_url(self):
-        user = self.request.user
-        
-        # Sécurité ici aussi pour le champ 'role'
-        role = getattr(user, 'role', None)
-        
-        # Logique de redirection basée sur le rôle
-        if role in ("BOSS", "HQ_ADMIN", "BRANCH_AGENT"):
-            return reverse_lazy("dashboard")
-            
-        return reverse_lazy("dashboard")
-
-
-
 @login_required
 def profile_view(request):
     user = request.user
@@ -293,106 +172,32 @@ def profile_view(request):
         action = request.POST.get("action")
         if action == "update_avatar":
             avatar = request.FILES.get("avatar")
-            if not avatar:
-                messages.error(request, "Veuillez sélectionner une photo.")
-            else:
+            if avatar:
                 user.avatar = avatar
                 user.save(update_fields=["avatar"])
-                messages.success(request, "Photo de profil mise à jour.")
+                messages.success(request, "Photo mise a jour.")
             return redirect("/profile/")
+        
         if action == "change_password":
-            old_password = request.POST.get("old_password") or ""
-            new_password = request.POST.get("new_password") or ""
-            confirm_password = request.POST.get("confirm_password") or ""
-            if not user.check_password(old_password):
-                messages.error(request, "Mot de passe actuel incorrect.")
-                return redirect("/profile/")
-            if not new_password or new_password != confirm_password:
-                messages.error(request, "Les nouveaux mots de passe ne correspondent pas.")
-                return redirect("/profile/")
-            user.set_password(new_password)
-            user.save(update_fields=["password"])
-            update_session_auth_hash(request, user)
-            messages.success(request, "Mot de passe mis à jour.")
+            old_p = request.POST.get("old_password")
+            new_p = request.POST.get("new_password")
+            conf_p = request.POST.get("confirm_password")
+            if user.check_password(old_p) and new_p == conf_p:
+                user.set_password(new_p)
+                user.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Mot de passe modifie.")
+            else:
+                messages.error(request, "Erreur dans les mots de passe.")
             return redirect("/profile/")
-        messages.error(request, "Action invalide.")
-        return redirect("/profile/")
+            
     return render(request, "ui/profile.html", {"user": user})
 
+def logout_view(request):
+    auth_logout(request)
+    return redirect("/login/")
 
-
-
-@login_required
-def reports_view(request):
-    user = request.user
-    if user.role not in ("BOSS", "HQ_ADMIN"):
-        messages.error(request, "Accès refusé")
-        return redirect("/dashboard/")
-
-    today = timezone.localdate()
-    period = request.GET.get("period", "week")
-    if period == "month":
-        start_date = today - timedelta(days=29)
-        period_label = "Mois"
-    else:
-        period = "week"
-        start_date = today - timedelta(days=6)
-        period_label = "Semaine"
-
-    day_shipments = ContainerShipment.objects.filter(created_at__date=today)
-    day_total = day_shipments.count()
-    day_in_transit = day_shipments.filter(status="IN_TRANSIT").count()
-    day_delivered = day_shipments.filter(status="DELIVERED").count()
-    day_value = (
-        ContainerItem.objects.filter(shipment__in=day_shipments).aggregate(
-            total=Sum(
-                ExpressionWrapper(F("qty") * F("unit_price"), output_field=DecimalField(max_digits=20, decimal_places=2))
-            )
-        )["total"]
-        or 0
-    )
-
-    period_shipments = ContainerShipment.objects.filter(
-        created_at__date__gte=start_date, created_at__date__lte=today
-    )
-    period_total = period_shipments.count()
-    period_in_transit = period_shipments.filter(status="IN_TRANSIT").count()
-    period_delivered = period_shipments.filter(status="DELIVERED").count()
-    period_value = (
-        ContainerItem.objects.filter(shipment__in=period_shipments).aggregate(
-            total=Sum(
-                ExpressionWrapper(F("qty") * F("unit_price"), output_field=DecimalField(max_digits=20, decimal_places=2))
-            )
-        )["total"]
-        or 0
-    )
-
-    if request.GET.get("export") == "csv":
-        response = HttpResponse(content_type="text/csv")
-        response["Content-Disposition"] = f'attachment; filename="rapport_{period}_{today}.csv"'
-        writer = csv.writer(response)
-        writer.writerow(["Periode", "Total conteneurs", "En transit", "Livres", "Valeur totale"])
-        writer.writerow([period_label, period_total, period_in_transit, period_delivered, f"{period_value:.2f}"])
-        return response
-
-    context = {
-        "today": today,
-        "period": period,
-        "period_label": period_label,
-        "day_total": day_total,
-        "day_in_transit": day_in_transit,
-        "day_delivered": day_delivered,
-        "day_value": day_value,
-        "period_total": period_total,
-        "period_in_transit": period_in_transit,
-        "period_delivered": period_delivered,
-        "period_value": period_value,
-        "start_date": start_date,
-    }
-    return render(request, "ui/reports.html", context)
-
-# Tests manuels (chat):
-# - Boss: envoie un msg sur shipment d’un autre site → OK
-# - Germaine (Branch Agent): ne peut pas poster sur shipment d’un autre site → 403
-# - Le message apparaît immédiatement après envoi
-# - Page reste stable si aucun message
+class RoleLoginView(LoginView):
+    template_name = "ui/login.html"
+    def get_success_url(self):
+        return reverse_lazy("dashboard")
