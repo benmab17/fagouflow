@@ -30,12 +30,13 @@ STATUS_LABELS = {
 
 def get_visible_shipments(user):
     """
-    Fonction utilitaire pour gerer la visibilite :
-    - BOSS, HQ_ADMIN et BE (Belgique) voient TOUT.
-    - Les autres voient leur site ou ce qui n'est pas encore assigne.
+    LOGIQUE CENTRALE : 
+    - Le BOSS et la BELGIQUE (BE) voient TOUS les conteneurs.
+    - Les autres sites ne voient que leur destination.
     """
     queryset = ContainerShipment.objects.all()
-    if user.role not in ("BOSS", "HQ_ADMIN") and user.site != "BE":
+    # Si l'utilisateur n'est pas BOSS/ADMIN et n'est pas du site BE (Belgique)
+    if user.role not in ("BOSS", "HQ_ADMIN") and getattr(user, 'site', '') != "BE":
         queryset = queryset.filter(
             Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
         )
@@ -77,6 +78,7 @@ def shipment_detail(request, shipment_id: int):
     user = request.user
     visible_shipments = get_visible_shipments(user)
     shipment = get_object_or_404(visible_shipments, pk=shipment_id)
+    
     shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
     
     if request.method == "POST":
@@ -96,7 +98,9 @@ def shipment_detail(request, shipment_id: int):
             return redirect(f"/shipments/{shipment_id}/")
 
     items = shipment.items.select_related("product").all()
-    for item in items: item.line_total = item.qty * item.unit_price
+    for item in items:
+        item.line_total = item.qty * item.unit_price
+
     documents = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
     chat_messages = ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at")
 
@@ -116,7 +120,8 @@ def shipments_list(request):
     if site: shipments = shipments.filter(destination_site=site)
     if date_value:
         parsed_date = parse_date(date_value)
-        if parsed_date: shipments = shipments.filter(Q(etd=parsed_date) | Q(created_at__date=parsed_date))
+        if parsed_date:
+            shipments = shipments.filter(Q(etd=parsed_date) | Q(created_at__date=parsed_date))
 
     shipments = shipments.order_by("-created_at")
     paginator = Paginator(shipments, 20)
