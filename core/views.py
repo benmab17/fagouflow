@@ -15,7 +15,7 @@ from django.utils.dateparse import parse_date
 # Import de tes modèles
 from chat.models import ChatMessage
 from documents.models import Document, DocumentShare
-from logistics.models import ContainerShipment, ContainerItem
+from logistics.models import ContainerShipment, ContainerItem, ShipmentUpdate
 
 STATUS_LABELS = {
     "CREATED": "Créé", 
