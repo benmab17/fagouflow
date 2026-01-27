@@ -110,15 +110,19 @@ def shipments_list(request):
 def shipment_documents(request, shipment_id: int):
     user = request.user
     shipments = ContainerShipment.objects.all()
+    # Règle Germaine : BOSS ou BE voient tout
     if user.role not in ("BOSS", "HQ_ADMIN") and getattr(user, 'site', '') != "BE":
         shipments = shipments.filter(Q(destination_site=user.site) | Q(destination_site__isnull=True))
+    
     shipment = get_object_or_404(shipments, pk=shipment_id)
 
     if request.method == "POST":
-        if request.POST.get("action") == "share":
+        action = request.POST.get("action")
+        if action == "share":
             doc_id = request.POST.get("document_id")
             doc = Document.objects.filter(linked_shipment=shipment, pk=doc_id).first()
-            if doc and (user.role in ("BOSS", "HQ_ADMIN") or doc.uploaded_by_id == user.id):
+            # On autorise le partage si BOSS, proprio du doc, ou site BE
+            if doc and (user.role in ("BOSS", "HQ_ADMIN") or doc.uploaded_by_id == user.id or getattr(user, 'site', '') == "BE"):
                 share = DocumentShare.objects.create(document=doc, expire_at=timezone.now() + timedelta(days=7), created_by=user)
                 return redirect(f"/shipments/{shipment_id}/documents/?shared={share.token}")
         else:
@@ -131,35 +135,17 @@ def shipment_documents(request, shipment_id: int):
                 messages.success(request, "Document ajouté")
             return redirect(f"/shipments/{shipment_id}/documents/")
 
-    docs = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
+    # --- CRUCIAL : On prépare les documents pour le HTML ---
+    docs = list(Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at"))
+    for d in docs:
+        # On définit explicitement can_share pour que ton template {% if doc.can_share %} fonctionne
+        d.can_share = (user.role in ("BOSS", "HQ_ADMIN") or d.uploaded_by_id == user.id or getattr(user, 'site', '') == "BE")
+
     token = request.GET.get("shared")
     url = request.build_absolute_uri(f"/documents/share/{token}/") if token else None
-    return render(request, "ui/shipment_documents.html", {"shipment": shipment, "documents": docs, "share_url": url})
-
-def document_share_view(request, token: str):
-    share = DocumentShare.objects.filter(token=token).first()
-    if not share or share.expire_at < timezone.now(): return render(request, "ui/document_share_invalid.html")
-    return FileResponse(share.document.file.open("rb"))
-
-def logout_view(request):
-    auth_logout(request)
-    return redirect("/login/")
-
-class RoleLoginView(LoginView):
-    template_name = "ui/login.html"
-    def get_success_url(self): return reverse_lazy("dashboard")
-
-@login_required
-def profile_view(request):
-    user = request.user
-    if request.method == "POST" and request.POST.get("action") == "update_avatar":
-        if request.FILES.get("avatar"):
-            user.avatar = request.FILES.get("avatar")
-            user.save(update_fields=["avatar"])
-            messages.success(request, "Photo mise à jour.")
-    return render(request, "ui/profile.html", {"user": user})
-
-@login_required
-def reports_view(request):
-    if request.user.role not in ("BOSS", "HQ_ADMIN"): return redirect("/dashboard/")
-    return render(request, "ui/reports.html", {"today": timezone.localdate()})
+    
+    return render(request, "ui/shipment_documents.html", {
+        "shipment": shipment, 
+        "documents": docs, 
+        "share_url": url
+    })
