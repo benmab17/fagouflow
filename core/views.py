@@ -28,24 +28,16 @@ STATUS_LABELS = {
     "DELIVERED": "Livre",
 }
 
-def get_visible_shipments(user):
-    """
-    LOGIQUE CENTRALE : 
-    - Le BOSS et la BELGIQUE (BE) voient TOUS les conteneurs.
-    - Les autres sites ne voient que leur destination.
-    """
-    queryset = ContainerShipment.objects.all()
-    # Si l'utilisateur n'est pas BOSS/ADMIN et n'est pas du site BE (Belgique)
-    if user.role not in ("BOSS", "HQ_ADMIN") and getattr(user, 'site', '') != "BE":
-        queryset = queryset.filter(
-            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
-        )
-    return queryset
-
 @login_required
 def dashboard(request):
     user = request.user
-    visible_shipments = get_visible_shipments(user)
+    # LOGIQUE DIRECTE : BE + BOSS voient tout
+    if user.role in ("BOSS", "HQ_ADMIN") or getattr(user, 'site', '') == "BE":
+        visible_shipments = ContainerShipment.objects.all()
+    else:
+        visible_shipments = ContainerShipment.objects.filter(
+            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
+        )
     
     shipments = list(visible_shipments.order_by("-created_at")[:5])
     for shipment in shipments:
@@ -76,9 +68,14 @@ def dashboard(request):
 @login_required
 def shipment_detail(request, shipment_id: int):
     user = request.user
-    visible_shipments = get_visible_shipments(user)
-    shipment = get_object_or_404(visible_shipments, pk=shipment_id)
+    if user.role in ("BOSS", "HQ_ADMIN") or getattr(user, 'site', '') == "BE":
+        visible_shipments = ContainerShipment.objects.all()
+    else:
+        visible_shipments = ContainerShipment.objects.filter(
+            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
+        )
     
+    shipment = get_object_or_404(visible_shipments, pk=shipment_id)
     shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
     
     if request.method == "POST":
@@ -110,7 +107,12 @@ def shipment_detail(request, shipment_id: int):
 @login_required
 def shipments_list(request):
     user = request.user
-    shipments = get_visible_shipments(user)
+    if user.role in ("BOSS", "HQ_ADMIN") or getattr(user, 'site', '') == "BE":
+        shipments = ContainerShipment.objects.all()
+    else:
+        shipments = ContainerShipment.objects.filter(
+            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
+        )
 
     status = request.GET.get("status", "").strip()
     site = request.GET.get("site", "").strip()
@@ -135,7 +137,27 @@ def shipments_list(request):
 
 @login_required
 def profile_view(request):
-    return render(request, "ui/profile.html", {"user": request.user})
+    user = request.user
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "update_avatar":
+            avatar = request.FILES.get("avatar")
+            if avatar:
+                user.avatar = avatar
+                user.save(update_fields=["avatar"])
+                messages.success(request, "Photo mise a jour.")
+            return redirect("/profile/")
+        if action == "change_password":
+            old_p, new_p, conf_p = request.POST.get("old_password"), request.POST.get("new_password"), request.POST.get("confirm_password")
+            if user.check_password(old_p) and new_p == conf_p:
+                user.set_password(new_p)
+                user.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Mot de passe modifie.")
+            else:
+                messages.error(request, "Erreur dans les mots de passe.")
+            return redirect("/profile/")
+    return render(request, "ui/profile.html", {"user": user})
 
 def logout_view(request):
     auth_logout(request)
