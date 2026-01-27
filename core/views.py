@@ -63,38 +63,60 @@ def dashboard(request):
         "total_value": total_val
     })
 
+
 @login_required
 def shipment_detail(request, shipment_id: int):
     user = request.user
     shipments = get_visible_shipments(user)
     shipment = get_object_or_404(shipments, pk=shipment_id)
 
-    # Chat logic
-    if request.method == "POST" and request.POST.get("form_name") == "chat":
-        body = (request.POST.get("body") or "").strip()
-        if body:
-            ChatMessage.objects.create(
-                shipment=shipment,
-                author=user,
-                site=get_user_site(user) or "BE",
-                body=body
-            )
-        return redirect(f"/shipments/{shipment_id}/#chat")
+    if request.method == "POST":
+        form_name = request.POST.get("form_name")
+        action = request.POST.get("action")
 
-    # Items calculation
+        # 1. LOGIQUE DU CHAT (Ton code actuel)
+        if form_name == "chat":
+            body = (request.POST.get("body") or "").strip()
+            if body:
+                ChatMessage.objects.create(
+                    shipment=shipment,
+                    author=user,
+                    site=get_user_site(user) or "BE",
+                    body=body
+                )
+            return redirect(f"/shipments/{shipment_id}/#chat")
+
+        # 2. LOGIQUE DES DOCUMENTS (Nouveau)
+        # On vérifie soit le form_name, soit l'action 'upload' que j'ai mis dans le HTML
+        if action == "upload":
+            file = request.FILES.get("file")
+            doc_type = request.POST.get("doc_type")
+            if file and doc_type:
+                # On crée le document en base de données
+                Document.objects.create(
+                    linked_shipment=shipment,
+                    doc_type=doc_type,
+                    file=file,
+                    uploaded_by=user
+                )
+                
+                # OPTIONNEL : Créer une ligne d'historique automatique pour l'ajout
+                ShipmentUpdate.objects.create(
+                    shipment=shipment,
+                    status=shipment.status,
+                    notes=f"Document '{doc_type}' ajouté par {user.username}"
+                )
+            return redirect(f"/shipments/{shipment_id}/")
+
+    # --- LE RESTE RESTE PAREIL ---
     items = shipment.items.select_related("product").all()
     for item in items:
-        # Calcul dynamique pour le template
         item.line_total = (item.qty or 0) * (item.unit_price or 0)
 
-    # Documents
     docs = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
-    for d in docs:
-        d.can_share = True
-
-    # Share link
-    token = request.GET.get("shared")
-    share_url = request.build_absolute_uri(f"/documents/share/{token}/") if token else None
+    
+    # Historique (Vérifie que le nom du modèle est bien ShipmentUpdate)
+    updates = shipment.updates.all().order_by("-created_at")
 
     chat_messages = ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at")
 
@@ -102,9 +124,11 @@ def shipment_detail(request, shipment_id: int):
         "shipment": shipment,
         "items": items,
         "documents": docs,
-        "share_url": share_url,
         "chat_messages": chat_messages,
+        "updates": updates, # On passe l'historique au template
     })
+
+
 
 @login_required
 def shipments_list(request):
