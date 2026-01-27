@@ -33,10 +33,13 @@ def dashboard(request):
     user = request.user
     visible_shipments = ContainerShipment.objects.all()
     
-    # LOGIQUE DE VISIBILITE : On ajoute le filtre "isnull" pour voir les nouveaux conteneurs de l'Admin
+    # LOGIQUE DE VISIBILITE : On autorise le site de l'user, le vide, et DLA (site de transit)
     if user.role not in ("BOSS", "HQ_ADMIN"):
         visible_shipments = visible_shipments.filter(
-            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
+            Q(destination_site=user.site) | 
+            Q(destination_site__isnull=True) | 
+            Q(destination_site="") |
+            Q(destination_site="DLA")
         )
     
     shipments = list(visible_shipments.order_by("-created_at")[:5])
@@ -70,10 +73,12 @@ def shipment_detail(request, shipment_id: int):
     user = request.user
     shipments = ContainerShipment.objects.all()
     
-    # Filtrage selon les droits (Cohérence avec le dashboard)
     if user.role not in ("BOSS", "HQ_ADMIN"):
         shipments = shipments.filter(
-            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
+            Q(destination_site=user.site) | 
+            Q(destination_site__isnull=True) | 
+            Q(destination_site="") |
+            Q(destination_site="DLA")
         )
     
     shipment = get_object_or_404(shipments, pk=shipment_id)
@@ -83,7 +88,6 @@ def shipment_detail(request, shipment_id: int):
         action = request.POST.get("action")
         form_name = request.POST.get("form_name")
 
-        # --- ACTION : MESSAGE CHAT ---
         if form_name == "chat":
             body = (request.POST.get("body") or "").strip()
             if body:
@@ -95,7 +99,6 @@ def shipment_detail(request, shipment_id: int):
                 )
                 return redirect(f"/shipments/{shipment_id}/#chat")
 
-        # --- ACTION : UPLOAD DOCUMENT ---
         elif action == "upload":
             title = (request.POST.get("title") or "").strip()
             uploaded_file = request.FILES.get("file")
@@ -110,7 +113,6 @@ def shipment_detail(request, shipment_id: int):
                 messages.success(request, "Document ajoute.")
             return redirect(f"/shipments/{shipment_id}/")
 
-    # Preparation des donnees pour l'affichage
     items = shipment.items.select_related("product").all()
     for item in items:
         item.line_total = item.qty * item.unit_price
@@ -133,7 +135,10 @@ def shipments_list(request):
     
     if user.role not in ("BOSS", "HQ_ADMIN"):
         shipments = shipments.filter(
-            Q(destination_site=user.site) | Q(destination_site__isnull=True) | Q(destination_site="")
+            Q(destination_site=user.site) | 
+            Q(destination_site__isnull=True) | 
+            Q(destination_site="") |
+            Q(destination_site="DLA")
         )
 
     status = request.GET.get("status", "").strip()
