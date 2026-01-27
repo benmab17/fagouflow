@@ -75,168 +75,56 @@ def shipment_detail(request, shipment_id: int):
     shipment = get_object_or_404(shipments, pk=shipment_id)
     shipment.status_label = STATUS_LABELS.get(shipment.status, shipment.status)
     
-    # Suivi du changement de statut en session
-    status_key = f"shipment_status_{shipment.pk}"
-    previous_status = request.session.get(status_key)
-    if previous_status and previous_status != shipment.status:
-        messages.info(request, "Statut change")
-    request.session[status_key] = shipment.status
-
+    # Gestion du POST
     if request.method == "POST":
         action = request.POST.get("action")
         form_name = request.POST.get("form_name")
 
-        # 1. Action : Partager un document via lien temporaire
-        if action == "share":
-            doc_id = request.POST.get("document_id")
-            document = Document.objects.filter(linked_shipment=shipment, pk=doc_id).first()
-            can_share = user.role in ("BOSS", "HQ_ADMIN") or (document and document.uploaded_by_id == user.id)
-            
-            if not document or not can_share:
-                messages.error(request, "Acces refuse.")
-            else:
-                share = DocumentShare.objects.create(
-                    document=document,
-                    expire_at=timezone.now() + timedelta(days=7),
-                    created_by=user,
-                )
-                AuditEvent.objects.create(
-                    actor=user,
-                    action="UPDATE",
-                    entity_type="Document",
-                    entity_id=str(document.pk),
-                    site=shipment.destination_site or "",
-                    summary="Document partage",
-                )
-                return redirect(f"/shipments/{shipment_id}/?shared={share.token}")
-
-        # 2. Action : Envoyer un message dans le chat
-        elif form_name == "chat":
+        # --- ACTION : ENVOYER UN MESSAGE ---
+        if form_name == "chat":
             body = (request.POST.get("body") or "").strip()
-            if not body:
-                messages.error(request, "Le message ne peut pas etre vide.")
-                return redirect(f"/shipments/{shipment_id}/#chat")
-            
-            if len(body) > 2000:
-                messages.error(request, "Message trop long (max 2000).")
-                return redirect(f"/shipments/{shipment_id}/#chat")
-
-            if user.role not in ("BOSS", "HQ_ADMIN") and shipment.destination_site not in (user.site, None, ""):
-                return HttpResponseForbidden("Acces refuse")
-
-            ChatMessage.objects.create(
-                shipment=shipment,
-                author=user,
-                site=user.site or "",
-                body=body,
-            )
-            AuditEvent.objects.create(
-                actor=user,
-                action="UPDATE",
-                entity_type="ContainerShipment",
-                entity_id=str(shipment.pk),
-                site=shipment.destination_site or user.site or "BE",
-                summary="Message envoye",
-            )
-            return redirect(f"/shipments/{shipment_id}/#chat")
-
-        # 3. Action : Partager un document avec un site specifique
-        elif action == "share_site":
-            doc_id = request.POST.get("document_id")
-            target_site = request.POST.get("site")
-            document = Document.objects.filter(linked_shipment=shipment, pk=doc_id).first()
-            
-            if not document or not target_site:
-                messages.error(request, "Selectionnez un site.")
-            else:
-                share, created = DocumentSiteShare.objects.get_or_create(
-                    document=document,
-                    site=target_site,
-                    defaults={"created_by": user},
+            if body:
+                ChatMessage.objects.create(
+                    shipment=shipment,
+                    author=user,
+                    site=user.site or "BE",
+                    body=body,
                 )
-                if created:
-                    AuditEvent.objects.create(
-                        actor=user,
-                        action="DOCUMENT_SHARED_SITE",
-                        entity_id=str(document.pk),
-                        summary=f"Partage avec le site : {target_site}",
-                    )
-                    messages.success(request, "Document partage avec le site.")
-                return redirect(f"/shipments/{shipment_id}/")
+                return redirect(f"/shipments/{shipment_id}/#chat")
 
-        # 4. Action par defaut : Upload de document
-        else:
+        # --- ACTION : UPLOAD DE DOCUMENT ---
+        elif action == "upload":
             title = (request.POST.get("title") or "").strip()
-            doc_type = request.POST.get("doc_type")
             uploaded_file = request.FILES.get("file")
             
-            if not title or not doc_type or not uploaded_file:
-                messages.error(request, "Titre, type et fichier requis.")
-            else:
+            if title and uploaded_file:
                 Document.objects.create(
                     linked_shipment=shipment,
                     title=title,
-                    doc_type=doc_type,
+                    doc_type="AUTRE", # Valeur par defaut pour eviter l'erreur
                     file=uploaded_file,
                     uploaded_by=user,
                 )
                 messages.success(request, "Document ajoute.")
-                return redirect(f"/shipments/{shipment_id}/")
+            return redirect(f"/shipments/{shipment_id}/")
 
-    # --- Preparation des donnees pour l'affichage ---
-    items = list(shipment.items.select_related("product").all())
+    # --- PREPARATION DES DONNEES ---
+    items = shipment.items.select_related("product").all()
     for item in items:
         item.line_total = item.qty * item.unit_price
 
-    audit_events = AuditEvent.objects.filter(entity_type="ContainerShipment", entity_id=str(shipment.pk)).order_by("created_at")
-    status_history = shipment.status_history.select_related("changed_by").order_by("changed_at")
-    documents = list(Document.objects.filter(linked_shipment=shipment).prefetch_related("site_shares").order_by("-uploaded_at"))
-    chat_messages = list(ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at"))
-
-    for doc in documents:
-        doc.can_share = user.role in ("BOSS", "HQ_ADMIN") or doc.uploaded_by_id == user.id
-
-    if user.role in ("BOSS", "HQ_ADMIN"):
-        shared_documents = []
-    else:
-        shared_documents = list(Document.objects.filter(linked_shipment=shipment, site_shares__site=user.site).distinct().order_by("-uploaded_at"))
-
-    shared_token = request.GET.get("shared")
-    share_url = request.build_absolute_uri(f"/documents/share/{shared_token}/") if shared_token else None
-
-    # Construction de la Timeline
-    timeline = []
-    action_labels = {"CREATE": "Cree", "UPDATE": "Mis a jour", "DELETE": "Supprime", "STATUS_CHANGE": "Changement de statut"}
-    
-    for event in audit_events:
-        timeline.append({
-            "date": event.created_at,
-            "action_label": action_labels.get(event.action, event.action),
-            "user": getattr(event.actor, "email", "Systeme") if event.actor else "Systeme",
-            "detail": event.summary,
-        })
-    for entry in status_history:
-        timeline.append({
-            "date": entry.changed_at,
-            "action_label": "Statut",
-            "user": getattr(entry.changed_by, "email", "Systeme") if entry.changed_by else "Systeme",
-            "detail": f"{entry.from_status} -> {entry.to_status}",
-        })
-    timeline.sort(key=lambda item: item["date"])
+    documents = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
+    chat_messages = ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at")
 
     context = {
         "shipment": shipment,
         "items": items,
-        "timeline": timeline,
         "documents": documents,
-        "shared_documents": shared_documents,
-        "share_url": share_url,
         "chat_messages": chat_messages,
-        "chat_count": len(chat_messages),
     }
     
-    # UTILISATION DU NOUVEAU NOM DE FICHIER POUR EVITER L'ERREUR D'ENCODAGE RENDER
     return render(request, "ui/shipment_info.html", context)
+
 
 
 @login_required
