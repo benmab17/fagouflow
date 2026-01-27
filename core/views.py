@@ -116,7 +116,7 @@ def shipment_detail(request, shipment_id: int):
     docs = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
     
     # Historique (Vérifie que le nom du modèle est bien ShipmentUpdate)
-    updates = shipment.updates.all().order_by("-created_at")
+    updates = ShipmentUpdate.objects.filter(shipment=shipment).order_by("-created_at")
 
     chat_messages = ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at")
 
