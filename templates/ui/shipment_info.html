@@ -312,6 +312,12 @@
     --radius2: 14px;
   }
 
+  /* Étape 1: densifier la mise en page (évite l'effet "vide") */
+ .app-container{
+  max-width: 1320px !important;
+  margin: 0 auto !important;
+}
+
   /* Shell */
   .app-shell{
     min-height: 100vh;
@@ -618,6 +624,48 @@
   .chat-box::-webkit-scrollbar{ width: 8px; }
   .chat-box::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius: 999px; }
   .chat-box::-webkit-scrollbar-track{ background: transparent; }
+
+ /* styles existants */
+
+  /* Étape 1 */
+  .app-container{
+    max-width: 1320px !important;
+    margin: 0 auto !important;
+  }
+
+  /* Étape 2 */
+  .app-table{
+    background: rgba(255,255,255,.02);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .app-table thead th{
+    background: rgba(255,255,255,.06) !important;
+    color: rgba(255,255,255,.82) !important;
+    border-bottom: 1px solid rgba(255,255,255,.08) !important;
+  }
+
+  .app-table tbody td{
+    background: transparent !important;
+    color: rgba(255,255,255,.90) !important;
+    border-color: rgba(255,255,255,.06) !important;
+  }
+
+  .table-hover tbody tr:hover{
+    background: rgba(79,140,255,.06) !important;
+  }
+
+  /* Étape 3 */
+  .input-wrap{
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+
+  .input-wrap:focus-within{
+    border-color: rgba(79,140,255,.55) !important;
+    box-shadow: 0 0 0 3px rgba(79,140,255,.20) !important;
+    background: rgba(255,255,255,.05) !important;
+  }
 </style>
 
 <script>
