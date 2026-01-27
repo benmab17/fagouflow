@@ -29,6 +29,7 @@ def dashboard(request):
     total_val = ContainerItem.objects.filter(shipment__in=visible).aggregate(total=Sum(ExpressionWrapper(F("qty") * F("unit_price"), output_field=DecimalField(max_digits=20, decimal_places=2))))["total"] or 0
     return render(request, "ui/dashboard.html", {"user": user, "shipments": shipments, "total_shipments": visible.count(), "in_transit": visible.filter(status="IN_TRANSIT").count(), "delivered": visible.filter(status="DELIVERED").count(), "total_value": total_val})
 
+
 @login_required
 def shipment_detail(request, shipment_id: int):
     user = request.user
@@ -37,21 +38,23 @@ def shipment_detail(request, shipment_id: int):
     shipments = ContainerShipment.objects.all() if is_privileged else ContainerShipment.objects.filter(Q(destination_site=user.site) | Q(destination_site__isnull=True))
     shipment = get_object_or_404(shipments, pk=shipment_id)
     
-    if request.method == "POST" and request.POST.get("form_name") == "chat":
-        body = (request.POST.get("body") or "").strip()
-        if body: ChatMessage.objects.create(shipment=shipment, author=user, site=user.site or "BE", body=body)
-        return redirect(f"/shipments/{shipment_id}/#chat")
-        
-    items = shipment.items.select_related("product").all()
-    for item in items: item.line_total = item.qty * item.unit_price
-    
-    docs = Document.objects.filter(linked_shipment=shipment)
+    # Récupération des documents avec forçage du droit de partage
+    docs = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
     for d in docs:
-        d.can_share = True  # Activé pour tout le monde pour garantir l'affichage du bouton
-        
+        d.can_share = True # On simplifie : si tu vois le doc, tu peux le partager (règle Germaine)
+
+    # Gestion du lien partagé (si on revient du partage)
+    token = request.GET.get("shared")
+    share_url = request.build_absolute_uri(f"/documents/share/{token}/") if token else None
+
+    # ... (reste de ta logique items et chat)
+    
     return render(request, "ui/shipment_info.html", {
-        "shipment": shipment, "items": items, "documents": docs, 
-        "chat_messages": ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at")
+        "shipment": shipment, 
+        "documents": docs, 
+        "share_url": share_url, # On ajoute ça !
+        "items": items,
+        "chat_messages": chat_messages
     })
 
 @login_required
