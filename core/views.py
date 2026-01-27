@@ -33,28 +33,47 @@ def dashboard(request):
 @login_required
 def shipment_detail(request, shipment_id: int):
     user = request.user
-    is_privileged = user.role in ("BOSS", "HQ_ADMIN") or getattr(user, 'site', '') == "BE"
-    
-    shipments = ContainerShipment.objects.all() if is_privileged else ContainerShipment.objects.filter(Q(destination_site=user.site) | Q(destination_site__isnull=True))
+    is_privileged = user.role in ("BOSS", "HQ_ADMIN") or getattr(user, "site", "") == "BE"
+
+    shipments = ContainerShipment.objects.all() if is_privileged else ContainerShipment.objects.filter(
+        Q(destination_site=user.site) | Q(destination_site__isnull=True)
+    )
     shipment = get_object_or_404(shipments, pk=shipment_id)
-    
-    # Récupération des documents avec forçage du droit de partage
+
+    # Chat
+    if request.method == "POST" and request.POST.get("form_name") == "chat":
+        body = (request.POST.get("body") or "").strip()
+        if body:
+            ChatMessage.objects.create(
+                shipment=shipment,
+                author=user,
+                site=user.site or "BE",
+                body=body
+            )
+        return redirect(f"/shipments/{shipment_id}/#chat")
+
+    # Items
+    items = shipment.items.select_related("product").all()
+    for item in items:
+        item.line_total = item.qty * item.unit_price
+
+    # Documents
     docs = Document.objects.filter(linked_shipment=shipment).order_by("-uploaded_at")
     for d in docs:
-        d.can_share = True # On simplifie : si tu vois le doc, tu peux le partager (règle Germaine)
+        d.can_share = True
 
-    # Gestion du lien partagé (si on revient du partage)
+    # Lien partagé (si on revient du partage)
     token = request.GET.get("shared")
     share_url = request.build_absolute_uri(f"/documents/share/{token}/") if token else None
 
-    # ... (reste de ta logique items et chat)
-    
+    chat_messages = ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at")
+
     return render(request, "ui/shipment_info.html", {
-        "shipment": shipment, 
-        "documents": docs, 
-        "share_url": share_url, # On ajoute ça !
+        "shipment": shipment,
         "items": items,
-        "chat_messages": chat_messages
+        "documents": docs,
+        "share_url": share_url,
+        "chat_messages": chat_messages,
     })
 
 @login_required
