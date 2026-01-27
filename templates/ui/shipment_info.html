@@ -9,8 +9,8 @@
         <div class="d-flex align-items-center">
             <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=0D6EFD&color=fff&rounded=true" width="50" height="50" class="me-3 shadow-sm">
             <div>
-                <h5 class="mb-0 fw-bold">{{ request.user.first_name|default:request.user.username }}</h5>
-                <small class="text-muted">{{ request.user.email }} | <b>{{ request.user.userprofile.role|default:"Agent" }}</b></small>
+                <h5 class="mb-0 fw-bold">{{ request.user.username }}</h5>
+                <small class="text-muted">{{ request.user.email }}</small>
             </div>
         </div>
         <a href="{% url 'profile' %}" class="btn btn-outline-primary btn-sm rounded-pill px-3">Gérer mon profil</a>
@@ -48,7 +48,7 @@
           {% csrf_token %}
           <input type="hidden" name="action" value="upload">
           <div class="col-md-4">
-            <input type="text" name="doc_type" placeholder="Nom du document (ex: Facture)" class="form-control" required>
+            <input type="text" name="doc_type" placeholder="Nom du document" class="form-control" required>
           </div>
           <div class="col-md-5">
             <input type="file" name="file" class="form-control" required>
@@ -94,9 +94,7 @@
 
         {% if share_url %}
         <div class="alert alert-success mt-3 d-flex justify-content-between align-items-center" style="border-radius: 10px;">
-            <div>
-                <strong>Lien prêt :</strong> <code id="shareLink">{{ share_url }}</code>
-            </div>
+            <div><strong>Lien prêt :</strong> <code id="shareLink">{{ share_url }}</code></div>
             <button class="btn btn-sm btn-success" onclick="copyShareLink()">Copier</button>
         </div>
         {% endif %}
@@ -104,7 +102,7 @@
   </div>
 
   <h4 id="chat" class="mb-3">Discussion</h4>
-  <div class="card shadow-sm border-0" style="border-radius: 15px; background-color: #e5ddd5; overflow: hidden;">
+  <div class="card shadow-sm border-0" style="border-radius: 15px; background-color: #e5ddd5; overflow: hidden; margin-bottom: 50px;">
       <div id="chat-box" style="height: 400px; overflow-y: auto; padding: 20px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');">
           {% for msg in chat_messages %}
               <div class="d-flex {% if msg.author == request.user %}justify-content-end{% else %}justify-content-start{% endif %} mb-3">
@@ -114,7 +112,7 @@
                       {% endif %}
                       <div>
                           <div class="small fw-bold {% if msg.author == request.user %}text-success text-end{% else %}text-primary{% endif %}">
-                            {% if msg.author == request.user %}Moi{% else %}{{ msg.author.username }}{% endif %}
+                            {{ msg.author.username }}
                           </div>
                           <div style="font-size: 0.95rem; word-wrap: break-word;">{{ msg.body }}</div>
                           <div class="{% if msg.author == request.user %}text-end{% endif %}" style="font-size: 0.65rem; color: #999;">{{ msg.created_at|date:"H:i" }}</div>
