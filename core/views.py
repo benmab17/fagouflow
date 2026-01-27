@@ -28,11 +28,12 @@ def dashboard(request):
     for s in shipments: s.status_label = STATUS_LABELS.get(s.status, s.status)
     total_val = ContainerItem.objects.filter(shipment__in=visible).aggregate(total=Sum(ExpressionWrapper(F("qty") * F("unit_price"), output_field=DecimalField(max_digits=20, decimal_places=2))))["total"] or 0
     return render(request, "ui/dashboard.html", {"user": user, "shipments": shipments, "total_shipments": visible.count(), "in_transit": visible.filter(status="IN_TRANSIT").count(), "delivered": visible.filter(status="DELIVERED").count(), "total_value": total_val})
-
 @login_required
 def shipment_detail(request, shipment_id: int):
     user = request.user
+    # Accès privilégié pour BOSS ou site Belgique
     is_privileged = user.role in ("BOSS", "HQ_ADMIN") or getattr(user, 'site', '') == "BE"
+    
     shipments = ContainerShipment.objects.all() if is_privileged else ContainerShipment.objects.filter(Q(destination_site=user.site) | Q(destination_site__isnull=True))
     shipment = get_object_or_404(shipments, pk=shipment_id)
     
@@ -44,14 +45,16 @@ def shipment_detail(request, shipment_id: int):
     items = shipment.items.select_related("product").all()
     for item in items: item.line_total = item.qty * item.unit_price
     
-    # On ajoute can_share ici aussi pour éviter l'erreur dans shipment_info
+    # --- ICI ON FORCE LE DROIT DE PARTAGER ---
     docs = Document.objects.filter(linked_shipment=shipment)
-    for d in docs: d.can_share = is_privileged or d.uploaded_by_id == user.id
+    for d in docs:
+        d.can_share = True  # On l'active pour tout le monde pour tester
         
     return render(request, "ui/shipment_info.html", {
         "shipment": shipment, "items": items, "documents": docs, 
         "chat_messages": ChatMessage.objects.filter(shipment=shipment).select_related("author").order_by("created_at")
     })
+
 
 @login_required
 def shipments_list(request):
