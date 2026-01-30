@@ -1,0 +1,44 @@
+﻿{% extends "base_client.html" %}
+
+{% block title %}Documents - {{ container.container_no }}{% endblock %}
+
+{% block content %}
+  <div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-1">Documents officiels</h3>
+      <div class="text-2">Conteneur {{ container.container_no }}</div>
+    </div>
+    <a href="{% url 'client_container_detail' container.id %}" class="btn btn-sm btn-outline-primary">Retour</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Date</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in documents %}
+              <tr>
+                <td>{{ d.doc_type }}</td>
+                <td>{{ d.uploaded_at|date:"d/m/Y" }}</td>
+                <td class="text-end">
+                  <a href="{{ d.file.url }}" class="btn btn-sm btn-primary" target="_blank">Voir</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="3" class="text-center text-3">Aucun document disponible.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

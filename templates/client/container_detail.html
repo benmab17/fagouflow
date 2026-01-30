@@ -1,0 +1,190 @@
+﻿{% extends "base_client.html" %}
+
+{% block title %}Conteneur {{ container.container_no }}{% endblock %}
+
+{% block content %}
+  <div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-1">Conteneur {{ container.container_no }}</h3>
+      <div class="text-2">Détails de l’expédition</div>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'client_containers_list' %}" class="btn btn-sm btn-outline-primary">Retour</a>
+      <a href="{% url 'client_container_documents' container.id %}" class="btn btn-sm btn-outline-primary">Documents</a>
+      <a href="{% url 'client_container_history' container.id %}" class="btn btn-sm btn-outline-primary">Historique</a>
+      <a href="{% url 'client_container_chat' container.id %}" class="btn btn-sm btn-outline-primary">Chat</a>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3">Synthèse exécutive</h5>
+          <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <div class="text-3 small">Statut</div>
+              <div><span class="badge">{{ container.status }}</span></div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="text-3 small">ETA</div>
+              <div class="fw-semibold">{{ container.eta|date:"d/m/Y"|default:"—" }}</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="text-3 small">Alertes</div>
+              <div class="fw-semibold">{{ alerts|default:"—" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3">Qualité opérationnelle</h5>
+          <div class="row g-2">
+            <div class="col-6">
+              <div class="text-3 small">BL disponible</div>
+              <div class="fw-semibold">{{ bl_available|default:"—" }}</div>
+            </div>
+            <div class="col-6">
+              <div class="text-3 small">INVOICE disponible</div>
+              <div class="fw-semibold">{{ invoice_available|default:"—" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-6">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3">Répartition par statut</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>Statut</th>
+                  <th class="text-end">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in status_breakdown %}
+                  <tr>
+                    <td>{{ row.status }}</td>
+                    <td class="text-end">{{ row.count }}</td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="2" class="text-center text-3">Aucune donnée.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3">Documents officiels</h5>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Date</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for d in documents %}
+                  <tr>
+                    <td>{{ d.doc_type }}</td>
+                    <td>{{ d.uploaded_at|date:"d/m/Y" }}</td>
+                    <td class="text-end">
+                      <a href="{{ d.file.url }}" class="btn btn-sm btn-primary" target="_blank">Voir</a>
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="3" class="text-center text-3">Aucun document disponible.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3">Historique du trajet</h5>
+          <div class="timeline">
+            {% for u in updates %}
+              <div class="mb-3">
+                <div class="fw-semibold">{{ u.status }}</div>
+                <div class="text-3">{{ u.created_at|date:"d/m/Y H:i" }}</div>
+                {% if u.notes %}
+                  <div class="text-2">{{ u.notes }}</div>
+                {% endif %}
+              </div>
+            {% empty %}
+              <div class="text-3">Aucun historique disponible.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="mb-3">Discussion</h5>
+          <div class="text-3 mb-3">Discussion client</div>
+          <div class="chat-wrap mb-3">
+            {% if chat_messages %}
+              {% for msg in chat_messages %}
+                <div class="chat-message {% if msg.is_me %}chat-message-me{% else %}chat-message-other{% endif %}">
+                  {% if msg.show_avatar %}
+                    <div class="chat-avatar">
+                      {% if msg.avatar_url %}
+                        <img src="{{ msg.avatar_url }}" alt="Avatar">
+                      {% else %}
+                        <div class="chat-initials">{{ msg.initials }}</div>
+                      {% endif %}
+                    </div>
+                  {% else %}
+                    <div class="chat-avatar-spacer"></div>
+                  {% endif %}
+                  <div class="chat-content">
+                    {% if msg.show_avatar %}
+                      <div class="chat-author">{{ msg.author_name }}</div>
+                    {% endif %}
+                    <div class="chat-bubble">{{ msg.body }}</div>
+                    <div class="chat-time">{{ msg.created_at|date:"H:i" }}</div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-3">Aucun message pour le moment.</div>
+            {% endif %}
+          </div>
+
+          <form method="post">
+            {% csrf_token %}
+            <div class="d-flex gap-2">
+              <textarea name="body" class="form-control" rows="2" placeholder="Votre message..." required></textarea>
+              <button type="submit" class="btn btn-primary">Envoyer</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

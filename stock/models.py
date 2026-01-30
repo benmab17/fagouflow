@@ -13,7 +13,8 @@ class StockLocation(models.Model):
     description = models.TextField(blank=True)
 
     def __str__(self) -> str:
-        return f"{self.site} - {self.name}"
+        label = f"{self.site or ''} - {self.name or ''}".strip(" -")
+        return label or f"Location #{self.pk}"
 
 
 class StockMovement(models.Model):

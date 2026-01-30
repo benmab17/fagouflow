@@ -1,0 +1,97 @@
+﻿{% extends "base_client.html" %}
+
+{% block title %}Dashboard Client{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <h3 class="mb-1">Tableau de bord client</h3>
+    <div class="text-2">Vue synthétique de vos expéditions</div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="text-3 small">Total</div>
+          <div class="h4 mb-0">{{ total_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="text-3 small">En transit</div>
+          <div class="h4 mb-0">{{ in_transit_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="text-3 small">En retard</div>
+          <div class="h4 mb-0">{{ late_count }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+      <div class="card">
+        <div class="card-body">
+          <div class="text-3 small">Livrés</div>
+          <div class="h4 mb-0">{{ delivered_count }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">Mes conteneurs</h5>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Origine</th>
+              <th>Destination</th>
+              <th class="col-status">Statut</th>
+              <th>ETA</th>
+              <th>Priorité</th>
+              <th>Dernière MAJ</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in containers %}
+              <tr>
+                <td>{{ c.reference|default:c.container_no }}</td>
+                <td>{{ c.origin|default:c.origin_country }}</td>
+                <td>{{ c.destination|default:c.destination_site }}</td>
+                <td class="col-status">
+                  <span class="badge">{{ c.status }}</span>
+                </td>
+                <td>{{ c.eta|date:"d/m/Y"|default:"—" }}</td>
+                <td>
+                  {% if c.priority %}
+                    <span class="priority-badge">{{ c.priority }}</span>
+                  {% else %}
+                    <span class="text-3">—</span>
+                  {% endif %}
+                </td>
+                <td>{{ c.updated_at|date:"d/m/Y H:i"|default:c.created_at }}</td>
+                <td class="text-end">
+                  <a href="{% url 'client_container_detail' c.id %}" class="btn btn-sm btn-primary">Voir</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="8" class="text-center text-3">Aucun conteneur disponible.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endblock %}

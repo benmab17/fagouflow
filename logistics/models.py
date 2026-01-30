@@ -28,11 +28,12 @@ class ContainerShipment(models.Model):
     destination_type = models.CharField(max_length=30, choices=DESTINATION_TYPE_CHOICES)
     destination_site = models.CharField(max_length=10, choices=SITE_CHOICES, null=True, blank=True)
     client_name = models.CharField(max_length=200, blank=True)
+    client = models.ForeignKey("core.Client", on_delete=models.SET_NULL, null=True, blank=True, related_name="shipments")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.container_no
+        return self.container_no or self.bl_no or f"Shipment #{self.pk}"
 
 
 class ContainerItem(models.Model):
@@ -43,7 +44,19 @@ class ContainerItem(models.Model):
     unit_price = models.DecimalField(max_digits=12, decimal_places=2)
 
     def __str__(self):
-        return f"{self.shipment.container_no} - {self.product.name} ({self.qty})"
+        shipment_ref = ""
+        product_name = ""
+        try:
+            shipment_ref = self.shipment.container_no if self.shipment_id and self.shipment else ""
+        except Exception:
+            shipment_ref = ""
+        try:
+            product_name = self.product.name if self.product_id and self.product else ""
+        except Exception:
+            product_name = ""
+        qty = self.qty if self.qty is not None else ""
+        label = f"{shipment_ref} - {product_name} ({qty})".strip(" -()")
+        return label or f"Item #{self.pk}"
 
 
 

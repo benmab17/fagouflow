@@ -1,0 +1,96 @@
+{% load static %}
+{% load avatar %}
+{% load user_display %}
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Client Portal{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <link rel="stylesheet" href="{% static 'client_portal/theme.css' %}?v=1">
+  </head>
+  <body class="client-portal" data-theme="dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+      <div class="container-fluid">
+        <a class="navbar-brand fw-semibold text-white" href="/client/">Client Portal</a>
+        <span class="badge text-bg-secondary ms-2">Acc?s client</span>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          {% if request.user.is_authenticated %}
+            <img
+              src="{{ request.user|avatar_url }}"
+              alt="Avatar"
+              class="rounded-circle border border-light"
+              width="28"
+              height="28"
+            />
+            <span class="small text-white">{{ request.user|display_name }}</span>
+            <a class="btn btn-outline-light btn-sm" href="{% url 'client_containers_list' %}">Mes conteneurs</a>
+            <form method="post" action="{% url 'logout' %}" class="d-inline">
+              {% csrf_token %}
+              <button class="btn btn-outline-light btn-sm" type="submit" title="Se d?connecter">
+                Se d?connecter
+              </button>
+            </form>
+          {% else %}
+            <img
+              class="ff-avatar rounded-circle border border-light"
+              src="{% static 'img/avatar-default.png' %}"
+              width="28"
+              height="28"
+              alt="Avatar"
+            />
+          {% endif %}
+        </div>
+      </div>
+    </nav>
+    <main class="container py-4 position-relative">
+      {% if request.path|slice:":9" == "/preview/" %}
+        <!-- PREVIEW ONLY ? TO DELETE -->
+        <a href="/preview/client-dashboard/" class="preview-badge">
+          PREVIEW MODE
+        </a>
+      {% endif %}
+      <div class="d-flex justify-content-end gap-2 mb-3">
+        <button id="theme-toggle" class="btn btn-sm btn-outline-light" type="button">
+          Mode clair
+        </button>
+      </div>
+      {% block content %}{% endblock %}
+    </main>
+    <script>
+      (function () {
+        const storageKey = "client_portal_theme";
+        const body = document.body;
+        const button = document.getElementById("theme-toggle");
+
+        function applyTheme(theme) {
+          body.setAttribute("data-theme", theme);
+          if (button) {
+            button.textContent = theme === "dark" ? "Mode clair" : "Mode sombre";
+          }
+        }
+
+        const saved = localStorage.getItem(storageKey);
+        if (saved === "light" || saved === "dark") {
+          applyTheme(saved);
+        } else {
+          applyTheme("dark");
+        }
+
+        if (button) {
+          button.addEventListener("click", function () {
+            const next = body.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            localStorage.setItem(storageKey, next);
+            applyTheme(next);
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -1,38 +1,64 @@
-{% extends "ui/base.html" %}
+﻿{% extends "ui/base.html" %}
+{% load user_display %}
 
 {% block title %}Tableau de bord - FagouFlow{% endblock %}
 
+{% block actions %}
+  <div class="ff-header">
+    <div class="ff-header__spacer"></div>
+    <div class="ff-header__title">
+      <h3 class="mb-1">Tableau de bord</h3>
+      <div class="ff-muted">Vue globale des opérations</div>
+    </div>
+    <div class="ff-actions">
+      <a href="{% url 'admin:logistics_containershipment_add' %}" class="btn btn-sm btn-primary btn-primary-unified ff-btn ff-btn--sm">
+        Nouvelle expédition
+      </a>
+      <a href="{% url 'dashboard_export' %}" class="btn btn-sm btn-outline-primary ff-btn ff-btn--sm">
+        Export rapport
+      </a>
+    </div>
+  </div>
+{% endblock %}
+
 {% block content %}
-  <div class="row g-3 mb-4">
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Total des conteneurs</div>
-          <div class="h4 mb-0">{{ total_shipments }}</div>
+  <div class="ff-section">
+    <div class="ff-grid ff-grid-4">
+      {% include "components/stat_card.html" with title="Total des conteneurs" value=total_shipments icon="bi bi-box-seam" extra_class="ff-kpi kpi-blue ff-card" %}
+      {% include "components/stat_card.html" with title="En transit" value=in_transit icon="bi bi-truck" extra_class="ff-kpi kpi-gold ff-card" %}
+      {% include "components/stat_card.html" with title="Livrés" value=delivered icon="bi bi-check2-circle" extra_class="ff-kpi kpi-green ff-card" %}
+      {% include "components/stat_card.html" with title="Valeur totale" value=total_value|floatformat:2 icon="bi bi-cash-coin" extra_class="ff-kpi kpi-violet ff-card" %}
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-12 col-lg-6">
+      <div class="card pro-card ff-card">
+        <div class="ff-card-header">
+          {% include "components/section_title.html" with title="Alertes & Priorités" count=alerts_count %}
+        </div>
+        <div class="ff-card-body">
+          {% if alerts %}
+            <div class="ff-alert-list">
+              {% for alert in alerts %}
+                {% include "components/alert_item.html" with level=alert.level title=alert.title message=alert.message meta=alert.container_code url=alert.url %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="mb-0 text-muted">Aucune alerte critique aujourd'hui.</p>
+          {% endif %}
         </div>
       </div>
     </div>
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">En transit</div>
-          <div class="h4 mb-0">{{ in_transit }}</div>
+    <div class="col-12 col-lg-6">
+      <div class="card ff-card ff-card--soft">
+        <div class="ff-card-header">
+          <h5 class="mb-0 ff-section-title">Répartition par statut</h5>
         </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Livrés</div>
-          <div class="h4 mb-0">{{ delivered }}</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-12 col-md-6 col-xl-3">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <div class="text-muted small">Valeur totale</div>
-          <div class="h4 mb-0">{{ total_value|floatformat:2 }}</div>
+        <div class="ff-card-body">
+          <div class="chart-container ff-chart">
+            <canvas id="statusDonut"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -40,9 +66,11 @@
 
   <div class="row g-4">
     <div class="col-12 col-lg-4">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title">Utilisateur</h5>
+      <div class="card ff-card ff-card--soft">
+        <div class="ff-card-header">
+          <h5 class="mb-0 ff-section-title">Utilisateur</h5>
+        </div>
+        <div class="ff-card-body">
           <p class="mb-1"><strong>Nom :</strong> {{ user.full_name }}</p>
           <p class="mb-1"><strong>Email :</strong> {{ user.email }}</p>
           <p class="mb-1"><strong>Rôle :</strong> {{ user.role }}</p>
@@ -52,53 +80,81 @@
     </div>
 
     <div class="col-12 col-lg-8">
-      <div class="card shadow-sm">
-        <div class="card-body">
-          <h5 class="card-title">5 derniers conteneurs</h5>
-          {% if shipments %}
-            <div class="table-responsive">
-              <table class="table table-striped table-hover align-middle">
-                <thead>
-                  <tr>
-                    <th>Conteneur</th>
-                    <th>Statut</th>
-                    <th>Destination</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for shipment in shipments %}
+      <div class="card ff-card ff-card--soft">
+        <div class="ff-card-header">
+          <h5 class="mb-0 ff-section-title">Suivi actif</h5>
+          <form class="d-flex flex-wrap gap-2" method="get">
+            <input
+              type="text"
+              name="q"
+              value="{{ q }}"
+              class="form-control form-control-sm ff-input"
+              placeholder="Rechercher conteneur, BL, client"
+            />
+            <select name="status" class="form-select form-select-sm ff-select">
+              <option value="ALL" {% if status_filter == "ALL" %}selected{% endif %}>Tous statuts</option>
+              {% for st in status_options %}
+                <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>{{ st }}</option>
+              {% endfor %}
+            </select>
+            <select name="destination" class="form-select form-select-sm ff-select">
+              <option value="ALL" {% if destination_filter == "ALL" %}selected{% endif %}>Toutes destinations</option>
+              {% for d in destination_options %}
+                <option value="{{ d }}" {% if destination_filter == d %}selected{% endif %}>{{ d }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-sm btn-primary btn-primary-unified ff-btn" type="submit">Filtrer</button>
+          </form>
+        </div>
+        <div class="ff-card-body">
+          {% if track_shipments %}
+            <div class="ff-table-wrap">
+              <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle ff-table">
+                  <thead>
                     <tr>
-                      <td>
-                        <a href="{% url 'shipment_detail' shipment.id %}" class="text-decoration-none">
-                          {{ shipment.container_no }}
-                        </a>
-                      </td>
-                      <td>
-                        {% if shipment.status == "CREATED" %}
-                          <span class="badge text-bg-secondary">{{ shipment.status_label }}</span>
+                      <th>Conteneur</th>
+                      <th>Client</th>
+                      <th>Statut</th>
+                      <th>Destination</th>
+                      <th class="text-end">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for shipment in track_shipments %}
+                      <tr>
+                        <td class="fw-semibold">{{ shipment.container_no }}</td>
+                        <td class="text-muted">{{ shipment.client_name|default:"—" }}</td>
+                        <td>
+                          {% if shipment.status == "CREATED" %}
+                          <span class="badge badge-status-created">{{ shipment.status_label }}</span>
                         {% elif shipment.status == "IN_TRANSIT" %}
-                          <span class="badge text-bg-warning">{{ shipment.status_label }}</span>
+                          <span class="badge badge-in-transit">{{ shipment.status_label }}</span>
                         {% elif shipment.status == "ARRIVED" %}
                           <span class="badge text-bg-info">{{ shipment.status_label }}</span>
                         {% elif shipment.status == "CLEARED" %}
                           <span class="badge text-bg-primary">{{ shipment.status_label }}</span>
                         {% elif shipment.status == "DELIVERED" %}
-                          <span class="badge text-bg-success">{{ shipment.status_label }}</span>
+                          <span class="badge badge-status-delivered">{{ shipment.status_label }}</span>
                         {% else %}
                           <span class="badge text-bg-light text-dark">{{ shipment.status }}</span>
                         {% endif %}
-                      </td>
-                      <td>
-                        {% if shipment.destination_site %}
-                          <span class="badge text-bg-dark">{{ shipment.destination_site }}</span>
-                        {% else %}
-                          <span class="badge text-bg-light text-dark">(aucun site)</span>
-                        {% endif %}
-                      </td>
-                    </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
+                        </td>
+                        <td>
+                          {% if shipment.destination_site %}
+                            <span class="badge text-bg-dark">{{ shipment.destination_site }}</span>
+                          {% else %}
+                            <span class="badge text-bg-light text-dark">(aucun site)</span>
+                          {% endif %}
+                        </td>
+                        <td class="text-end">
+                          <a href="{% url 'shipment_detail' shipment.id %}" class="btn btn-sm btn-primary btn-primary-unified ff-btn ff-btn--sm">Ouvrir</a>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
             </div>
           {% else %}
             <p class="mb-0">Aucun conteneur disponible.</p>
@@ -107,4 +163,101 @@
       </div>
     </div>
   </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-12 col-lg-6">
+      <div class="card pro-card ff-card">
+        <div class="ff-card-header">
+          <h5 class="mb-0 ff-section-title">Activité récente</h5>
+        </div>
+        <div class="ff-card-body">
+          {% if activities %}
+            <div class="ff-activity-list">
+              {% for item in activities %}
+                <div class="ff-activity-item">
+                  <div class="ff-activity-time">
+                    {{ item.timestamp|date:"d/m H:i" }}
+                  </div>
+                  <div>
+                    <div class="fw-semibold">
+                      {{ item.user|display_name }}
+                      <span class="text-muted fw-normal">{{ item.action }}</span>
+                    </div>
+                    <div class="small text-muted">
+                      <a href="/shipments/{{ item.shipment_id }}/" class="text-decoration-none">
+                        {{ item.container_code }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="mb-0 text-muted">Aucune activité récente.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card ff-card ff-card--soft">
+        <div class="ff-card-header">
+          <h5 class="mb-0 ff-section-title">Volume d’expéditions (7j)</h5>
+        </div>
+        <div class="ff-card-body">
+          <div class="chart-container ff-chart">
+            <canvas id="shipmentsBar"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script>
+    const style = getComputedStyle(document.body);
+    const chartText = style.getPropertyValue("--text") || "#ffffff";
+    const chartMuted = style.getPropertyValue("--muted") || "rgba(255,255,255,0.65)";
+    const chartGrid = style.getPropertyValue("--stroke") || "rgba(255,255,255,0.1)";
+    const donutCtx = document.getElementById("statusDonut");
+    if (donutCtx) {
+      new Chart(donutCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["Créé", "En transit", "Livré", "Autres"],
+          datasets: [{
+            data: [12, 8, 6, 4],
+            backgroundColor: ["#64748b", "#f5c342", "#22c55e", "#4f7cff"]
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { labels: { color: chartText, font: { size: 12 } } },
+            tooltip: { backgroundColor: "#0b1220", titleColor: "#ffffff", bodyColor: "#ffffff", borderColor: chartGrid, borderWidth: 1 }
+          }
+        }
+      });
+    }
+    const barCtx = document.getElementById("shipmentsBar");
+    if (barCtx) {
+      new Chart(barCtx, {
+        type: "bar",
+        data: {
+          labels: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+          datasets: [{ label: "Expéditions", data: [4, 7, 5, 6, 8, 3, 5], backgroundColor: "#4f7cff" }]
+        },
+        options: {
+          plugins: {
+            legend: { labels: { color: chartText, font: { size: 12 } } },
+            tooltip: { backgroundColor: "#0b1220", titleColor: "#ffffff", bodyColor: "#ffffff", borderColor: chartGrid, borderWidth: 1 }
+          },
+          scales: {
+            x: { ticks: { color: chartMuted, font: { size: 12 } }, grid: { color: chartGrid } },
+            y: { ticks: { color: chartMuted, font: { size: 12 } }, grid: { color: chartGrid } }
+          }
+        }
+      });
+    }
+  </script>
 {% endblock %}

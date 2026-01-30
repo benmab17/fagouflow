@@ -1,0 +1,19 @@
+<div class="ff-alert ff-alert-{{ level|default:'info' }}">
+  <div>
+    <div class="d-flex align-items-center gap-2 mb-1">
+      <div class="ff-alert-title">{{ title }}</div>
+      <span class="ff-alert-badge">
+        {% if level == "critical" %}Priorité haute{% elif level == "warning" %}Priorité moyenne{% else %}Priorité{% endif %}
+      </span>
+    </div>
+    {% if message %}
+      <div class="text-muted small">{{ message }}</div>
+    {% endif %}
+    {% if meta %}
+      <div class="text-muted small">{{ meta }}</div>
+    {% endif %}
+  </div>
+  {% if url %}
+    <a href="{{ url }}" class="btn btn-sm btn-outline-primary">Voir</a>
+  {% endif %}
+</div>

@@ -1,0 +1,237 @@
+﻿/* Client Portal Theme (Dark) */
+:root {
+  --cp-bg0: #070b14;
+  --cp-bg1: #0b1220;
+  --cp-card: rgba(255, 255, 255, 0.06);
+  --cp-card2: rgba(255, 255, 255, 0.08);
+  --cp-stroke: rgba(255, 255, 255, 0.1);
+  --cp-text: #ffffff;
+  --cp-text-2: rgba(255, 255, 255, 0.9);
+  --cp-text-3: rgba(255, 255, 255, 0.75);
+  --cp-shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+  --cp-radius: 18px;
+}
+
+body.client-portal {
+  background:
+    radial-gradient(900px 420px at 8% -10%, rgba(59, 130, 246, 0.18), transparent 60%),
+    radial-gradient(900px 480px at 110% 0%, rgba(56, 189, 248, 0.16), transparent 55%),
+    linear-gradient(180deg, var(--cp-bg0) 0%, var(--cp-bg1) 100%);
+  color: var(--cp-text);
+}
+
+body.client-portal[data-theme="light"] {
+  --cp-bg0: #eef2f7;
+  --cp-bg1: #f6f8fb;
+  --cp-card: #ffffff;
+  --cp-card2: #f8fafc;
+  --cp-stroke: rgba(15, 23, 42, 0.08);
+  --cp-text: #0f172a;
+  --cp-text-2: rgba(15, 23, 42, 0.8);
+  --cp-text-3: rgba(15, 23, 42, 0.6);
+  --cp-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  background:
+    radial-gradient(1000px 500px at 10% -10%, rgba(59, 130, 246, 0.08), transparent 60%),
+    linear-gradient(180deg, var(--cp-bg0) 0%, var(--cp-bg1) 100%);
+  color: var(--cp-text);
+}
+
+body.client-portal h1,
+body.client-portal h2,
+body.client-portal h3,
+body.client-portal h4,
+body.client-portal h5,
+body.client-portal h6,
+body.client-portal p,
+body.client-portal li,
+body.client-portal span,
+body.client-portal div,
+body.client-portal label,
+body.client-portal small,
+body.client-portal strong,
+body.client-portal td,
+body.client-portal th {
+  color: var(--cp-text);
+}
+
+body.client-portal .text-2 { color: var(--cp-text-2) !important; }
+body.client-portal .text-3 { color: var(--cp-text-3) !important; }
+
+body.client-portal .card,
+body.client-portal .panel {
+  background: var(--cp-card);
+  border: 1px solid var(--cp-stroke);
+  border-radius: var(--cp-radius);
+  box-shadow: var(--cp-shadow);
+}
+
+body.client-portal .card.soft,
+body.client-portal .panel.soft {
+  background: var(--cp-card2);
+}
+
+body.client-portal .table {
+  color: var(--cp-text);
+}
+
+body.client-portal .table thead th {
+  background: var(--cp-card2);
+  color: var(--cp-text);
+  border-bottom: 1px solid var(--cp-stroke);
+}
+
+body.client-portal .table-hover > tbody > tr:hover > * {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+body.client-portal .form-control,
+body.client-portal .form-select {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--cp-stroke);
+  color: var(--cp-text);
+}
+
+body.client-portal .form-control::placeholder {
+  color: var(--cp-text-3);
+}
+
+/* Do not override button or priority badge colors */
+body.client-portal .btn,
+body.client-portal .priority-badge {
+  color: inherit;
+}
+
+/* Status column text only */
+body.client-portal table .col-status {
+  color: #000 !important;
+}
+
+/* PREVIEW badge */
+body.client-portal .preview-badge {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1050;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
+}
+
+body.client-portal .preview-badge:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+body.client-portal .navbar .ff-brand {
+  color: #fff !important;
+}
+
+body.client-portal .navbar .ff-brand:hover {
+  color: #fff !important;
+}
+
+body.client-portal .navbar img.ff-avatar {
+  opacity: 1 !important;
+  filter: none !important;
+  background: transparent !important;
+  object-fit: cover;
+  display: inline-block !important;
+  visibility: visible !important;
+}
+
+.ff-avatar {
+  display: inline-block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  background: transparent !important;
+}
+
+/* Client chat styles */
+body.client-portal .chat-wrap {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px;
+  background: var(--cp-card2);
+  border: 1px solid var(--cp-stroke);
+  border-radius: 14px;
+}
+
+body.client-portal .chat-message {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+body.client-portal .chat-message-me {
+  justify-content: flex-end;
+}
+
+body.client-portal .chat-avatar {
+  width: 40px;
+  margin-right: 10px;
+}
+
+body.client-portal .chat-avatar img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--cp-stroke);
+}
+
+body.client-portal .chat-avatar-spacer {
+  width: 40px;
+  margin-right: 10px;
+}
+
+body.client-portal .chat-initials {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--cp-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+body.client-portal .chat-content {
+  max-width: 70%;
+}
+
+body.client-portal .chat-author {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+body.client-portal .chat-bubble {
+  background: var(--cp-card);
+  border-radius: 12px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.client-portal .chat-message-me .chat-bubble {
+  background: rgba(59, 130, 246, 0.25);
+}
+
+body.client-portal .chat-time {
+  font-size: 0.72rem;
+  color: var(--cp-text-3);
+  margin-top: 3px;
+}
+
+@media (max-width: 768px) {
+  body.client-portal .chat-content {
+    max-width: 90%;
+  }
+}

@@ -1,0 +1,14 @@
+<div class="ff-card ff-stat {{ extra_class|default:'' }}">
+  <div class="d-flex justify-content-between align-items-start gap-2">
+    <div>
+      <div class="ff-stat-label">{{ title }}</div>
+      <div class="ff-stat-value">{{ value }}</div>
+      {% if subtitle %}
+        <div class="ff-stat-sub">{{ subtitle }}</div>
+      {% endif %}
+    </div>
+    {% if icon %}
+      <span class="ff-kpi-icon"><i class="{{ icon }}"></i></span>
+    {% endif %}
+  </div>
+</div>

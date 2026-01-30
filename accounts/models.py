@@ -30,6 +30,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         ("HQ_ADMIN", "HQ Admin"),
         ("BRANCH_AGENT", "Branch Agent"),
         ("ACCOUNTING", "Accounting"),
+        ("CLIENT", "Client"),
     ]
     SITE_CHOICES = [
         ("BE", "BE"),
@@ -42,7 +43,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=200)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     site = models.CharField(max_length=10, choices=SITE_CHOICES)
+    client = models.ForeignKey("core.Client", on_delete=models.SET_NULL, null=True, blank=True)
     avatar = CloudinaryField("avatar", null=True, blank=True)
+    local_avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
@@ -53,4 +56,4 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ["full_name", "role", "site"]
 
     def __str__(self) -> str:
-        return self.email
+        return self.email or self.full_name or f"User #{self.pk}"

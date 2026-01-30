@@ -66,3 +66,27 @@ class AdminStaffOnlyMiddleware:
                 messages.error(request, "Accès refusé")
                 return redirect("/dashboard/")
         return self.get_response(request)
+
+
+class ClientPortalAccessMiddleware:
+    """Restrict CLIENT users to /client/ and redirect internal users away from client portal."""
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest):
+        user = getattr(request, "user", None)
+        if user and user.is_authenticated:
+            role = getattr(user, "role", "")
+            is_client = role == "CLIENT" or getattr(user, "is_client", False)
+            path = request.path
+            if is_client:
+                if path.startswith("/client/"):
+                    return self.get_response(request)
+                if path.startswith("/login/") or path.startswith("/logout/") or path.startswith("/accounts/login/"):
+                    return self.get_response(request)
+                if path.startswith("/dashboard/") or path.startswith("/direction/") or path.startswith("/admin/"):
+                    return redirect("/client/")
+                return redirect("/client/")
+            if path.startswith("/client/"):
+                return redirect("/dashboard/")
+        return self.get_response(request)

@@ -1,12 +1,21 @@
+import os
+
 from django.db import models
 from django.conf import settings
+from django.utils.text import get_valid_filename, slugify
 
 from logistics.models import ContainerShipment
 from supply.models import PurchaseOrder
 
 
 def document_upload_path(instance, filename: str) -> str:
-    return f"documents/{instance.doc_type}/{filename}"
+    raw_type = (instance.doc_type or "documents").strip()
+    safe_type = slugify(raw_type) or "documents"
+    base, ext = os.path.splitext(filename or "")
+    safe_base = slugify(get_valid_filename(base)) or "document"
+    safe_ext = (ext or "").lower()
+    safe_name = f"{safe_base}{safe_ext}"
+    return f"documents/{safe_type}/{safe_name}"
 
 
 def generate_share_token() -> str:

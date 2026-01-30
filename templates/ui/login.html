@@ -1,17 +1,18 @@
 {% extends "ui/base.html" %}
 
-{% block title %}Connexion - FagouFlow{% endblock %}
+{% block title %}Connexion au portail{% endblock %}
 
 {% block content %}
   <div class="row justify-content-center">
     <div class="col-12 col-md-6 col-lg-4">
       <div class="card shadow-sm">
         <div class="card-body">
-          <h5 class="card-title mb-3">Connexion</h5>
-          <form method="post">
+          <h5 class="card-title mb-3">Connexion au portail</h5>
+          <div class="mb-3">Accédez à votre espace sécurisé.</div>
+          <form method="post" action="">
             {% csrf_token %}
             <div class="mb-3">
-              <label class="form-label" for="id_username">Email</label>
+              <label class="form-label" for="id_username">Identifiant</label>
               <input
                 class="form-control"
                 type="email"

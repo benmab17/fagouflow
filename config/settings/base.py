@@ -12,7 +12,12 @@ load_dotenv(BASE_DIR / ".env")
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-secret")
 DEBUG = os.getenv("DJANGO_DEBUG", "0") == "1"
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "").split(",") if h.strip()]
-CLOUDINARY_ENABLED = bool(os.environ.get("CLOUDINARY_CLOUD_NAME"))
+CLOUDINARY_ENABLED = bool(os.environ.get("CLOUDINARY_CLOUD_NAME") or os.environ.get("CLOUDINARY_URL"))
+ALERTS_TRANSIT_DAYS = int(os.environ.get("ALERTS_TRANSIT_DAYS", "7"))
+ALERTS_MAX_ITEMS = int(os.environ.get("ALERTS_MAX_ITEMS", "10"))
+ALERTS_REQUIRED_DOC_TYPES = [
+    t.strip() for t in os.environ.get("ALERTS_REQUIRED_DOC_TYPES", "BL,INVOICE").split(",") if t.strip()
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -45,11 +50,12 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "core.middleware.ThreadLocalRequestMiddleware",
-    "core.middleware.AdminStaffOnlyMiddleware",
-]
+      "django.contrib.messages.middleware.MessageMiddleware",
+      "django.middleware.clickjacking.XFrameOptionsMiddleware",
+      "core.middleware.ThreadLocalRequestMiddleware",
+      "core.middleware.ClientPortalAccessMiddleware",
+      "core.middleware.AdminStaffOnlyMiddleware",
+  ]
 
 ROOT_URLCONF = "config.urls"
 
@@ -101,6 +107,7 @@ USE_TZ = True
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 WHITENOISE_MANIFEST_STRICT = False
 MEDIA_URL = "/media/"

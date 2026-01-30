@@ -1,0 +1,80 @@
+{% load static %}
+{% load avatar %}
+{% load user_display %}
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}Client Portal - FagouFlow{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+      crossorigin="anonymous"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <link href="{% static 'ui/app.css' %}" rel="stylesheet" />
+    <link href="{% static 'ui/theme.css' %}" rel="stylesheet" />
+    <link href="{% static 'ui/layout.css' %}" rel="stylesheet" />
+    <link href="{% static 'ui/components.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/fagouflow.css' %}" rel="stylesheet" />
+  </head>
+  <body class="ff-body" data-theme="dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+      <div class="container-fluid">
+        <a class="navbar-brand fw-semibold text-white" href="/client/">Client Portal</a>
+        <span class="badge text-bg-secondary ms-2">Accès client</span>
+        <div class="ms-auto d-flex align-items-center gap-2 text-white">
+          {% with avatar=request.user|avatar_url %}
+            {% if avatar %}
+              <img
+                src="{{ avatar }}"
+                alt="Avatar"
+                width="28"
+                height="28"
+                class="rounded-circle border border-light"
+              />
+            {% else %}
+              <img
+                src="{% static 'img/avatar-default.png' %}"
+                alt="Avatar"
+                width="28"
+                height="28"
+                class="rounded-circle border border-light"
+              />
+            {% endif %}
+          {% endwith %}
+          <span class="small">{{ request.user|display_name }}</span>
+          <a class="btn btn-outline-light btn-sm" href="/client/containers/">Mes conteneurs</a>
+          <button id="theme-toggle"
+                  class="btn btn-outline-light btn-sm"
+                  type="button"
+                  title="Changer le thème">
+            
+          </button>
+          <form method="post" action="{% url 'logout' %}" class="d-inline">
+            {% csrf_token %}
+            <button class="btn btn-outline-light btn-sm" type="submit" title="Se déconnecter">
+              <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container ff-container py-4">
+      {% if messages %}
+        <div class="mb-3">
+          {% for message in messages %}
+            <div class="alert alert-success mb-2">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+  </body>
+</html>

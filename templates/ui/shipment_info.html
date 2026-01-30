@@ -1,32 +1,37 @@
-
-
-{% extends "ui/base.html" %}
+﻿{% extends "ui/base.html" %}
+{% load avatar %}
+{% load user_display %}
 
 {% block content %}
 <div class="container py-4 shipment-page" style="max-width: 1200px;">
 
   <!-- Header / User -->
-  <div class="card border-0 shadow-sm mb-4 top-card">
+  <div class="card ff-card mb-4 top-card">
     <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
       <div class="d-flex align-items-center">
-        <div class="avatar-circle shadow-sm">
-          {{ request.user.username|slice:":1"|upper }}
-        </div>
+        <img
+          src="{{ request.user|avatar_url }}"
+          alt="Avatar"
+          width="48"
+          height="48"
+          class="rounded-circle border"
+          style="object-fit: cover;"
+        />
         <div class="ms-3">
           <div class="d-flex align-items-center gap-2 flex-wrap">
-            <h5 class="mb-0 fw-bold text-dark">{{ request.user.username }}</h5>
-            <span class="badge badge-soft-primary">Agent connecté</span>
+            <h5 class="mb-0 fw-bold">{{ request.user|display_name }}</h5>
+            <span class="badge badge-agent-online">Agent connecté</span>
           </div>
-          <p class="mb-0 text-muted small">{{ request.user.email }}</p>
+          <p class="mb-0 small ff-muted">{{ request.user.email }}</p>
         </div>
       </div>
 
       <!-- Quick actions -->
       <div class="d-flex align-items-center gap-2 ms-auto">
-        <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+        <a href="javascript:history.back()" class="btn btn-sm btn-outline-secondary rounded-pill px-3 ff-btn ff-btn--sm">
           <i class="bi bi-arrow-left me-1"></i>Retour
         </a>
-        <a href="#chat" class="btn btn-sm btn-primary rounded-pill px-3">
+        <a href="#chat" class="btn btn-sm btn-primary rounded-pill px-3 ff-btn ff-btn--sm">
           <i class="bi bi-chat-dots me-1"></i>Discussion
         </a>
       </div>
@@ -38,20 +43,20 @@
     <div class="col-lg-8">
 
       <!-- Shipment summary -->
-      <div class="card border-0 shadow-sm mb-4 section-card">
-        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+      <div class="card ff-card mb-4 section-card">
+        <div class="card-header border-0 py-3 d-flex justify-content-between align-items-center">
           <div>
             <h5 class="mb-0 fw-bold">
               <i class="bi bi-box-seam me-2 text-primary"></i>
               Conteneur <span class="text-muted">#</span>{{ shipment.container_no }}
             </h5>
-            <div class="text-muted small mt-1">
+            <div class="small mt-1 ff-muted">
               <i class="bi bi-geo-alt me-1"></i>{{ shipment.origin_country }}
               <span class="mx-2">•</span>
               <i class="bi bi-truck me-1"></i>{{ shipment.destination_site }}
             </div>
           </div>
-          <span class="badge rounded-pill bg-primary px-3 py-2">{{ shipment.status }}</span>
+          <span class="badge rounded-pill px-3 py-2 {% if shipment.status == 'IN_TRANSIT' %}badge-in-transit{% else %}bg-primary{% endif %}">{{ shipment.status }}</span>
         </div>
 
         <div class="card-body border-top">
@@ -75,43 +80,39 @@
       </div>
 
       <!-- Documents -->
-      <div class="card border-0 shadow-sm section-card">
-        <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+      <div class="card ff-card section-card">
+        <div class="card-header border-0 py-3 d-flex justify-content-between align-items-center">
           <h5 class="mb-0 fw-bold">
             <i class="bi bi-file-earmark-text me-2 text-primary"></i>Documents officiels
           </h5>
-          <span class="text-muted small">Total : {{ documents|length }}</span>
+          <span class="small ff-muted">Total : {{ documents|length }}</span>
         </div>
 
         
        <div class="px-3 mb-4">
-    <form method="post" action="{% url 'shipment_documents' shipment.id %}" enctype="multipart/form-data" class="row g-2 p-3" style="background: rgba(0,0,0,0.03); border-radius: 12px; border: 1px dashed rgba(0,0,0,0.1);">
+    <form method="post" action="{% url 'shipment_documents' shipment.id %}" enctype="multipart/form-data" class="row g-2 p-3 ff-card--soft" style="border-radius: 12px; border: 1px dashed var(--stroke);">
         {% csrf_token %}
         <input type="hidden" name="action" value="upload">
         
         <div class="col-md-4">
-            <input type="text" name="doc_type" placeholder="Nom du document (ex: Facture)" class="form-control form-control-sm" required>
+            <input type="text" name="doc_type" placeholder="Nom du document (ex: Facture)" class="form-control form-control-sm ff-input" required>
         </div>
         
         <div class="col-md-5">
-            <input type="file" name="file" class="form-control form-control-sm" required>
+            <input type="file" name="file" class="form-control form-control-sm ff-input" required>
         </div>
         
         <div class="col-md-3">
-            <button type="submit" class="btn btn-sm btn-dark w-100">
+            <button type="submit" class="btn btn-sm btn-primary btn-primary-unified w-100">
                 <i class="bi bi-plus-circle me-1"></i>Charger
             </button>
         </div>
     </form>
 </div>
 
-
-
-
-
         <div class="table-responsive px-3 pb-3">
-          <table class="table table-hover align-middle doc-table mb-0">
-            <thead class="table-light">
+          <table class="table table-hover align-middle doc-table mb-0 ff-table">
+            <thead>
               <tr>
                 <th>Type</th>
                 <th class="text-center" style="width: 120px;">Version</th>
@@ -123,7 +124,7 @@
               <tr>
                 <td>
                   <div class="fw-bold">{{ d.doc_type }}</div>
-                  <div class="text-muted small">
+                  <div class="small ff-muted">
                     <i class="bi bi-calendar3 me-1"></i>Ajouté le {{ d.uploaded_at|date:"d/m/Y" }}
                   </div>
                 </td>
@@ -134,7 +135,7 @@
 
                 <td class="text-end">
                   <div class="btn-group">
-                    <a href="{{ d.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                    <a href="{{ d.file.url }}" class="btn btn-sm btn-primary btn-primary-unified" target="_blank">
                       <i class="bi bi-eye me-1"></i>Voir
                     </a>
 
@@ -142,7 +143,7 @@
                       {% csrf_token %}
                       <input type="hidden" name="action" value="share">
                       <input type="hidden" name="document_id" value="{{ d.id }}">
-                      <button type="submit" class="btn btn-sm btn-primary">
+                      <button type="submit" class="btn btn-sm btn-primary btn-primary-unified">
                         <i class="bi bi-share me-1"></i>Partager
                       </button>
                     </form>
@@ -168,8 +169,8 @@
 
     <!-- Sidebar -->
     <div class="col-lg-4">
-      <div class="card border-0 shadow-sm section-card">
-        <div class="card-header bg-white border-0 py-3">
+      <div class="card ff-card section-card">
+        <div class="card-header border-0 py-3">
           <h5 class="mb-0 fw-bold">
             <i class="bi bi-clock-history me-2 text-primary"></i>Historique du trajet
           </h5>
@@ -182,7 +183,7 @@
                 <div class="timeline-dot"></div>
                 <div class="timeline-content">
                   <div class="fw-bold small">{{ update.status }}</div>
-                  <div class="text-muted" style="font-size: 0.75rem;">
+                  <div class="ff-muted" style="font-size: 0.75rem;">
                     {{ update.created_at|date:"d M Y • H:i" }}
                   </div>
                   {% if update.notes %}
@@ -206,41 +207,60 @@
   <div class="mt-5" id="chat">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
       <h5 class="fw-bold mb-0"><i class="bi bi-chat-dots me-2 text-primary"></i>Discussion d'équipe</h5>
-      <span class="text-muted small">{{ chat_messages|length }} message(s)</span>
+      <span class="ff-muted small">{{ chat_messages|length }} message(s)</span>
     </div>
 
-    <div class="card border-0 shadow-lg chat-card">
-      <div id="chat-box" class="chat-box">
-        {% for msg in chat_messages %}
-          <div class="d-flex mb-3 {% if msg.author == request.user %}justify-content-end{% endif %}">
-            <div class="chat-bubble {% if msg.author == request.user %}me-bubble{% else %}other-bubble{% endif %}">
-              {% if msg.author != request.user %}
-                <small class="fw-bold text-primary d-block mb-1">{{ msg.author.username }}</small>
+    <div class="card ff-card chat-card">
+      <div id="chat-section">
+        <div id="chat-box" class="chat-box">
+          {% for msg in chat_messages %}
+          {% if msg.show_date_separator %}
+            <div class="chat-date-separator">{{ msg.date_label }}</div>
+          {% endif %}
+          <div class="chat-message {% if msg.is_me %}chat-message-me{% endif %}">
+            {% if msg.show_avatar %}
+              <div class="chat-avatar">
+                {% if msg.avatar_url %}
+                  <img src="{{ msg.avatar_url }}" alt="Avatar">
+                {% else %}
+                  <div class="chat-initials">{{ msg.initials }}</div>
+                {% endif %}
+              </div>
+            {% else %}
+              <div class="chat-avatar-spacer"></div>
+            {% endif %}
+            <div class="chat-content">
+              {% if msg.show_avatar %}
+                <div class="chat-author">{{ msg.author_name }}</div>
               {% endif %}
-              <div class="chat-text">{{ msg.body }}</div>
-              <div class="chat-time">{{ msg.created_at|date:"H:i" }}</div>
+              <div class="chat-bubble {% if msg.is_me %}chat-bubble-me{% else %}chat-bubble-other{% endif %}">
+                <div class="chat-text">{{ msg.body }}</div>
+                <div class="chat-time">{{ msg.created_at|date:"H:i" }}</div>
+              </div>
             </div>
           </div>
         {% empty %}
           <div class="text-center py-5">
-            <i class="bi bi-chat-left-text text-muted fs-2"></i>
-            <p class="text-muted small mt-2 mb-0">Aucun message pour l’instant.</p>
+            <i class="bi bi-chat-left-text ff-muted fs-2"></i>
+            <p class="ff-muted small mt-2 mb-0">Aucun message pour l’instant.</p>
           </div>
         {% endfor %}
+        </div>
       </div>
 
-      <div class="p-3 bg-white border-top">
-        <form method="post" action="{% url 'shipment_detail' shipment.id %}#chat" class="d-flex gap-2 align-items-center">
+      <div class="p-3 border-top" style="border-color: var(--stroke);">
+        <form id="chat-form" method="post" action="{% url 'shipment_detail' shipment.id %}#chat" class="d-flex gap-2 align-items-center">
           {% csrf_token %}
           <input type="hidden" name="form_name" value="chat">
-          <input
-            type="text"
+          <textarea
+            id="chat-input"
             name="body"
-            class="form-control chat-input"
-            placeholder="Tapez votre message ici…"
+            class="form-control chat-input ff-input"
+            rows="2"
+            placeholder="Tapez votre message ici… (Entrée pour envoyer, Maj+Entrée pour nouvelle ligne)"
             required
-          >
-          <button type="submit" class="btn btn-primary chat-send">
+          ></textarea>
+          <button type="submit" class="btn btn-primary chat-send" id="chat-send" disabled>
             <i class="bi bi-send-fill"></i>
           </button>
         </form>
@@ -250,165 +270,62 @@
 
 </div>
 
-<style>
-  .shipment-page { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; }
-
-  /* Theme */
-  :root{
-    --radius-xl: 18px;
-    --radius-lg: 15px;
-    --soft-bg: #f6f8fb;
-    --soft-border: rgba(0,0,0,.06);
-  }
-
-  /* Cards */
-  .top-card, .section-card, .chat-card{
-    border-radius: var(--radius-xl);
-    background: linear-gradient(180deg, #ffffff 0%, var(--soft-bg) 100%);
-  }
-
-  .avatar-circle{
-    width: 52px; height: 52px;
-    border-radius: 50%;
-    display:flex; align-items:center; justify-content:center;
-    background: #0d6efd;
-    color: #fff;
-    font-weight: 800;
-    font-size: 1.25rem;
-    letter-spacing: .5px;
-  }
-
-  .badge-soft-primary{
-    background: rgba(13,110,253,.12);
-    color: #0d6efd;
-    border: 1px solid rgba(13,110,253,.18);
-    border-radius: 999px;
-    padding: .35rem .6rem;
-    font-weight: 600;
-  }
-
-  .badge-soft-dark{
-    background: rgba(33,37,41,.06);
-    color: #212529;
-    border: 1px solid rgba(33,37,41,.12);
-    padding: .35rem .6rem;
-  }
-
-  /* Info blocks */
-  .info-card{
-    border: 1px solid var(--soft-border);
-    border-radius: var(--radius-lg);
-    padding: 14px 14px;
-    background: rgba(255,255,255,.7);
-  }
-  .info-label{
-    font-size: .72rem;
-    text-transform: uppercase;
-    letter-spacing: .06em;
-    color: #6c757d;
-    font-weight: 700;
-    margin-bottom: 6px;
-  }
-  .info-value{ font-weight: 800; color: #212529; }
-  .info-sub{ font-size: .85rem; color: #6c757d; margin-top: 2px; }
-
-  /* Docs */
-  .doc-table thead th{ font-size: .85rem; }
-  .doc-table tbody tr{ border-color: rgba(0,0,0,.04); }
-
-  /* Timeline */
-  .timeline{
-    position: relative;
-    margin-left: 8px;
-    padding-left: 20px;
-    border-left: 2px solid rgba(0,0,0,.08);
-  }
-  .timeline-item{ position: relative; padding-bottom: 18px; }
-  .timeline-dot{
-    position:absolute;
-    left: -30px;
-    top: 4px;
-    width: 14px; height: 14px;
-    background: #0d6efd;
-    border-radius: 50%;
-    border: 3px solid #fff;
-    box-shadow: 0 6px 14px rgba(13,110,253,.25);
-  }
-  .timeline-content{
-    border: 1px solid var(--soft-border);
-    border-radius: var(--radius-lg);
-    padding: 10px 12px;
-    background: rgba(255,255,255,.75);
-  }
-  .timeline-note{
-    margin-top: 8px;
-    font-size: .9rem;
-    color: #212529;
-    background: rgba(13,110,253,.06);
-    border: 1px solid rgba(13,110,253,.10);
-    border-radius: 12px;
-    padding: 10px 10px;
-  }
-
-  /* Chat */
-  .chat-card{ overflow: hidden; }
-  .chat-box{
-    height: 460px;
-    overflow-y: auto;
-    padding: 22px;
-    background:
-      radial-gradient(circle at 20% 10%, rgba(13,110,253,.08), transparent 42%),
-      radial-gradient(circle at 80% 0%, rgba(25,135,84,.08), transparent 40%),
-      linear-gradient(180deg, #eef2f7, #f7f9fc);
-  }
-  .chat-bubble{
-    max-width: 72%;
-    border-radius: 16px;
-    padding: 12px 14px;
-    box-shadow: 0 10px 24px rgba(0,0,0,.06);
-    border: 1px solid rgba(0,0,0,.06);
-  }
-  .me-bubble{
-    background: #dcf8c6;
-    border-bottom-right-radius: 6px;
-  }
-  .other-bubble{
-    background: #ffffff;
-    border-bottom-left-radius: 6px;
-  }
-  .chat-text{ font-size: .95rem; line-height: 1.45; color: #212529; white-space: pre-wrap; }
-  .chat-time{ margin-top: 6px; font-size: .7rem; color: #8a8f98; text-align: right; }
-
-  .chat-input{
-    border-radius: 999px;
-    border: 1px solid rgba(0,0,0,.06);
-    background: #f4f6f9;
-    padding: 12px 16px;
-  }
-  .chat-input:focus{
-    box-shadow: 0 0 0 .2rem rgba(13,110,253,.15);
-    border-color: rgba(13,110,253,.35);
-    background: #fff;
-  }
-  .chat-send{
-    width: 46px; height: 46px;
-    border-radius: 50%;
-    display:flex; align-items:center; justify-content:center;
-  }
-
-  /* Scrollbar */
-  .chat-box::-webkit-scrollbar{ width: 8px; }
-  .chat-box::-webkit-scrollbar-thumb{
-    background: rgba(0,0,0,.12);
-    border-radius: 999px;
-  }
-  .chat-box::-webkit-scrollbar-track{ background: transparent; }
-</style>
-
 <script>
   window.addEventListener("load", function () {
     var chat = document.getElementById("chat-box");
     if (chat) chat.scrollTop = chat.scrollHeight;
+
+    var input = document.querySelector(".chat-input");
+    var form = document.getElementById("chat-form");
+    var sendBtn = document.getElementById("chat-send");
+
+    function updateSendState() {
+      if (!input || !sendBtn) return;
+      sendBtn.disabled = !(input.value || "").trim();
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function highlightMentions() {
+      var nodes = document.querySelectorAll(".chat-text");
+      nodes.forEach(function (node) {
+        var raw = node.textContent || "";
+        var escaped = escapeHtml(raw);
+        var html = escaped.replace(/(@[a-zA-Z0-9._-]+)/g, '<span class="chat-mention">$1</span>');
+        node.innerHTML = html;
+      });
+    }
+
+    if (input && form) {
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          if ((input.value || "").trim()) {
+            form.requestSubmit();
+          }
+        }
+      });
+      input.addEventListener("input", updateSendState);
+      updateSendState();
+    }
+
+    highlightMentions();
+  });
+</script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var focusChat = {{ focus_chat|yesno:"true,false" }};
+    if (focusChat) {
+      var chat = document.getElementById("chat-section");
+      var input = document.getElementById("chat-input");
+      if (chat) chat.scrollIntoView({ behavior: "smooth" });
+      if (input) input.focus();
+    }
   });
 </script>
 {% endblock %}

@@ -1,0 +1,48 @@
+/* Components */
+.ff-alert-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ff-activity-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.ff-activity-item {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--panel2);
+}
+
+.ff-activity-time {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.ff-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+
+.ff-table-wrap {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: rgba(10, 15, 30, 0.6);
+}
+
+.ff-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+}
+

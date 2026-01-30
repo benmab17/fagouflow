@@ -1,0 +1,183 @@
+﻿[
+  {
+    "model": "core.client",
+    "pk": 1,
+    "fields": {
+      "name": "Client A",
+      "email": "clienta@example.com",
+      "phone": "",
+      "country": "CM",
+      "address": "",
+      "created_at": "2026-01-20T10:00:00Z"
+    }
+  },
+  {
+    "model": "core.client",
+    "pk": 2,
+    "fields": {
+      "name": "Client B",
+      "email": "clientb@example.com",
+      "phone": "",
+      "country": "CM",
+      "address": "",
+      "created_at": "2026-01-20T10:05:00Z"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 101,
+    "fields": {
+      "email": "usera@example.com",
+      "full_name": "User A",
+      "role": "CLIENT",
+      "site": "BE",
+      "client": 1,
+      "password": "pbkdf2_sha256$600000$H7O1L1dKXj2fE0mU4O2a2H$1H2s0Zl2u1fxG8HUpi2p4Gv2g1dO2GJfT9c1Yt5y3hQ=",
+      "is_active": true,
+      "is_staff": false,
+      "date_joined": "2026-01-20T09:00:00Z"
+    }
+  },
+  {
+    "model": "accounts.user",
+    "pk": 102,
+    "fields": {
+      "email": "userb@example.com",
+      "full_name": "User B",
+      "role": "CLIENT",
+      "site": "BE",
+      "client": 2,
+      "password": "pbkdf2_sha256$600000$H7O1L1dKXj2fE0mU4O2a2H$1H2s0Zl2u1fxG8HUpi2p4Gv2g1dO2GJfT9c1Yt5y3hQ=",
+      "is_active": true,
+      "is_staff": false,
+      "date_joined": "2026-01-20T09:05:00Z"
+    }
+  },
+  {
+    "model": "logistics.containershipment",
+    "pk": 201,
+    "fields": {
+      "container_no": "CMAU1234567",
+      "bl_no": "BL-A-001",
+      "status": "IN_TRANSIT",
+      "etd": null,
+      "eta": "2026-02-05",
+      "origin_country": "CM",
+      "destination_type": "DIRECT_CLIENT",
+      "destination_site": "PN",
+      "client_name": "Client A",
+      "client": 1,
+      "created_by": 101,
+      "created_at": "2026-01-20T12:00:00Z"
+    }
+  },
+  {
+    "model": "logistics.containershipment",
+    "pk": 202,
+    "fields": {
+      "container_no": "CMAU7654321",
+      "bl_no": "BL-A-002",
+      "status": "CREATED",
+      "etd": null,
+      "eta": "2026-02-12",
+      "origin_country": "CN",
+      "destination_type": "DIRECT_CLIENT",
+      "destination_site": "DLA",
+      "client_name": "Client A",
+      "client": 1,
+      "created_by": 101,
+      "created_at": "2026-01-22T08:00:00Z"
+    }
+  },
+  {
+    "model": "logistics.containershipment",
+    "pk": 203,
+    "fields": {
+      "container_no": "CMAU9990001",
+      "bl_no": "BL-A-003",
+      "status": "DELIVERED",
+      "etd": null,
+      "eta": "2026-01-28",
+      "origin_country": "FR",
+      "destination_type": "DIRECT_CLIENT",
+      "destination_site": "KIN",
+      "client_name": "Client A",
+      "client": 1,
+      "created_by": 101,
+      "created_at": "2026-01-10T10:00:00Z"
+    }
+  },
+  {
+    "model": "logistics.containershipment",
+    "pk": 204,
+    "fields": {
+      "container_no": "MSCU1112223",
+      "bl_no": "BL-B-001",
+      "status": "IN_TRANSIT",
+      "etd": null,
+      "eta": "2026-02-07",
+      "origin_country": "ES",
+      "destination_type": "DIRECT_CLIENT",
+      "destination_site": "PN",
+      "client_name": "Client B",
+      "client": 2,
+      "created_by": 102,
+      "created_at": "2026-01-21T11:00:00Z"
+    }
+  },
+  {
+    "model": "documents.document",
+    "pk": 301,
+    "fields": {
+      "linked_shipment": 201,
+      "linked_po": null,
+      "title": "BL CMAU1234567",
+      "doc_type": "BL",
+      "description": "",
+      "file": "documents/bl/cma1234567.pdf",
+      "uploaded_by": 101,
+      "uploaded_at": "2026-01-21T09:00:00Z",
+      "version": 1,
+      "is_current": true
+    }
+  },
+  {
+    "model": "documents.document",
+    "pk": 302,
+    "fields": {
+      "linked_shipment": 201,
+      "linked_po": null,
+      "title": "Invoice CMAU1234567",
+      "doc_type": "INVOICE",
+      "description": "",
+      "file": "documents/invoice/cma1234567.pdf",
+      "uploaded_by": 101,
+      "uploaded_at": "2026-01-21T10:00:00Z",
+      "version": 1,
+      "is_current": true
+    }
+  },
+  {
+    "model": "core.shipmentupdate",
+    "pk": 401,
+    "fields": {
+      "shipment": 201,
+      "status": "IN_TRANSIT",
+      "notes": "Parti du port d'origine",
+      "created_by": 101,
+      "created_at": "2026-01-22T12:00:00Z"
+    }
+  },
+  {
+    "model": "logistics.statushistory",
+    "pk": 501,
+    "fields": {
+      "shipment": 201,
+      "from_status": "CREATED",
+      "to_status": "IN_TRANSIT",
+      "changed_by": 101,
+      "changed_at": "2026-01-22T12:00:00Z",
+      "note": "Départ"
+    }
+  }
+]

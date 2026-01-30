@@ -1,0 +1,127 @@
+﻿[
+  {
+    "model": "core.client",
+    "pk": 11,
+    "fields": {
+      "name": "Client Demo A",
+      "email": "",
+      "phone": "",
+      "country": "CM",
+      "address": "",
+      "preview_only": true,
+      "created_at": "2026-01-10T10:00:00Z"
+    }
+  },
+  {
+    "model": "core.client",
+    "pk": 12,
+    "fields": {
+      "name": "Client Demo B",
+      "email": "",
+      "phone": "",
+      "country": "CM",
+      "address": "",
+      "preview_only": true,
+      "created_at": "2026-01-10T10:05:00Z"
+    }
+  },
+  {
+    "model": "logistics.containershipment",
+    "pk": 211,
+    "fields": {
+      "container_no": "DEMOA123456",
+      "bl_no": "BL-DEMO-A-001",
+      "status": "IN_TRANSIT",
+      "etd": null,
+      "eta": "2026-02-10",
+      "origin_country": "CM",
+      "destination_type": "DIRECT_CLIENT",
+      "destination_site": "PN",
+      "client_name": "Client Demo A",
+      "client": 11,
+      "created_by": null,
+      "created_at": "2026-01-12T12:00:00Z"
+    }
+  },
+  {
+    "model": "logistics.containershipment",
+    "pk": 212,
+    "fields": {
+      "container_no": "DEMOA654321",
+      "bl_no": "BL-DEMO-A-002",
+      "status": "CREATED",
+      "etd": null,
+      "eta": "2026-02-15",
+      "origin_country": "CN",
+      "destination_type": "DIRECT_CLIENT",
+      "destination_site": "DLA",
+      "client_name": "Client Demo A",
+      "client": 11,
+      "created_by": null,
+      "created_at": "2026-01-14T08:00:00Z"
+    }
+  },
+  {
+    "model": "logistics.containershipment",
+    "pk": 213,
+    "fields": {
+      "container_no": "DEMOA777888",
+      "bl_no": "BL-DEMO-A-003",
+      "status": "DELIVERED",
+      "etd": null,
+      "eta": "2026-01-28",
+      "origin_country": "FR",
+      "destination_type": "DIRECT_CLIENT",
+      "destination_site": "KIN",
+      "client_name": "Client Demo A",
+      "client": 11,
+      "created_by": null,
+      "created_at": "2026-01-05T10:00:00Z"
+    }
+  },
+  {
+    "model": "logistics.containershipment",
+    "pk": 214,
+    "fields": {
+      "container_no": "DEMOB111222",
+      "bl_no": "BL-DEMO-B-001",
+      "status": "IN_TRANSIT",
+      "etd": null,
+      "eta": "2026-02-08",
+      "origin_country": "ES",
+      "destination_type": "DIRECT_CLIENT",
+      "destination_site": "PN",
+      "client_name": "Client Demo B",
+      "client": 12,
+      "created_by": null,
+      "created_at": "2026-01-11T11:00:00Z"
+    }
+  },
+  {
+    "model": "documents.document",
+    "pk": 311,
+    "fields": {
+      "linked_shipment": 211,
+      "linked_po": null,
+      "title": "BL DEMO",
+      "doc_type": "BL",
+      "description": "",
+      "file": "documents/bl/demo.pdf",
+      "uploaded_by": null,
+      "uploaded_at": "2026-01-13T09:00:00Z",
+      "version": 1,
+      "is_current": true
+    }
+  },
+  {
+    "model": "core.shipmentupdate",
+    "pk": 411,
+    "fields": {
+      "shipment": 211,
+      "status": "IN_TRANSIT",
+      "notes": "Départ",
+      "created_by": null,
+      "created_at": "2026-01-13T12:00:00Z"
+    }
+  }
+]

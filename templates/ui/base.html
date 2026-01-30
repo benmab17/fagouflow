@@ -17,9 +17,15 @@
       rel="stylesheet"
     />
     <link href="{% static 'ui/app.css' %}" rel="stylesheet" />
+    <link href="{% static 'ui/theme.css' %}" rel="stylesheet" />
+    <link href="{% static 'ui/layout.css' %}" rel="stylesheet" />
+    <link href="{% static 'ui/components.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/theme_pro.css' %}" rel="stylesheet" />
+    <link href="{% static 'css/fagouflow.css' %}" rel="stylesheet" />
+    <link href="{% static 'ui/fagouflow.css' %}" rel="stylesheet" />
   </head>
-  <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <body class="ff-body" data-theme="dark">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
       <div class="container-fluid">
         <a class="navbar-brand fw-semibold" href="/dashboard/">FagouFlow</a>
         <button
@@ -42,6 +48,11 @@
               <li class="nav-item">
                 <a class="nav-link" href="/profile/">Mon profil</a>
               </li>
+              {% if request.user.is_staff or request.user.is_superuser or request.user.role == "BOSS" or request.user.role == "HQ_ADMIN" %}
+                <li class="nav-item">
+                  <a class="nav-link" href="/direction/">Direction</a>
+                </li>
+              {% endif %}
             {% endif %}
             <li class="nav-item">
               <a class="nav-link" href="/admin/">Admin</a>
@@ -96,7 +107,8 @@
       </div>
     </nav>
 
-    <main class="container py-4">
+    <main class="container ff-container py-4">
+      {% block actions %}{% endblock %}
       {% if messages %}
         <div class="mb-3">
           {% for message in messages %}
@@ -106,5 +118,6 @@
       {% endif %}
       {% block content %}{% endblock %}
     </main>
+    {% block scripts %}{% endblock %}
   </body>
 </html>

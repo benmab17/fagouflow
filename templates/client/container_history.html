@@ -1,0 +1,49 @@
+﻿{% extends "base_client.html" %}
+
+{% block title %}Historique - {{ container.container_no }}{% endblock %}
+
+{% block content %}
+  <div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-1">Historique du trajet</h3>
+      <div class="text-2">Conteneur {{ container.container_no }}</div>
+    </div>
+    <a href="{% url 'client_container_detail' container.id %}" class="btn btn-sm btn-outline-primary">Retour</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      {% if updates %}
+        <div class="timeline">
+          {% for u in updates %}
+            <div class="mb-3">
+              <div class="fw-semibold">{{ u.status }}</div>
+              <div class="text-3">{{ u.created_at|date:"d/m/Y H:i" }}</div>
+              {% if u.notes %}
+                <div class="text-2">{{ u.notes }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="text-3">Aucun historique disponible.</div>
+      {% endif %}
+
+      {% if status_history %}
+        <hr class="my-4" />
+        <h6 class="mb-3">Changements de statut</h6>
+        <div class="timeline">
+          {% for s in status_history %}
+            <div class="mb-3">
+              <div class="fw-semibold">{{ s.from_status }} → {{ s.to_status }}</div>
+              <div class="text-3">{{ s.changed_at|date:"d/m/Y H:i" }}</div>
+              {% if s.note %}
+                <div class="text-2">{{ s.note }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

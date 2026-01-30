@@ -10,7 +10,7 @@ class Supplier(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return self.name
+        return self.name or self.contact_email or f"Supplier #{self.pk}"
 
 
 class Product(models.Model):
@@ -21,7 +21,10 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self) -> str:
-        return f"{self.sku} - {self.name}"
+        sku = self.sku or ""
+        name = self.name or ""
+        label = f"{sku} - {name}".strip(" -")
+        return label or f"Product #{self.pk}"
 
 
 class PurchaseOrder(models.Model):

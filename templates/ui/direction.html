@@ -1,0 +1,150 @@
+﻿{% extends "ui/base.html" %}
+
+{% block title %}Direction - FagouFlow{% endblock %}
+
+{% block actions %}
+  <div class="section-header">
+    <div>
+      <h3 class="mb-1">Direction</h3>
+      <div class="dark-muted">Synthèse exécutive</div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block content %}
+  <div class="ff-section">
+    <div class="ff-grid ff-grid-4">
+      {% include "components/stat_card.html" with title="Total conteneurs" value=total_count icon="bi bi-box-seam" extra_class="ff-kpi kpi-blue" %}
+      {% include "components/stat_card.html" with title="En transit" value=in_transit_count icon="bi bi-truck" extra_class="ff-kpi kpi-gold" %}
+      {% include "components/stat_card.html" with title="Livrés" value=delivered_count icon="bi bi-check2-circle" extra_class="ff-kpi kpi-green" %}
+      {% include "components/stat_card.html" with title="Bloqués / Douane" value=blocked_count icon="bi bi-shield-exclamation" extra_class="ff-kpi kpi-violet" %}
+      {% include "components/stat_card.html" with title="Docs manquants" value=missing_docs_count icon="bi bi-file-earmark-excel" extra_class="ff-kpi kpi-gold" %}
+      {% if total_value != None %}
+        {% include "components/stat_card.html" with title="Valeur totale" value=total_value|floatformat:2 icon="bi bi-cash-coin" extra_class="ff-kpi kpi-blue" %}
+      {% else %}
+        {% include "components/stat_card.html" with title="Valeur totale" value="Indisponible" icon="bi bi-cash-coin" extra_class="ff-kpi kpi-blue" %}
+      {% endif %}
+      {% include "components/stat_card.html" with title="Risques" value=risks_count icon="bi bi-exclamation-triangle" extra_class="ff-kpi kpi-violet" %}
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-6">
+      <div class="card ff-card">
+        <div class="ff-card-header">
+          <h5 class="mb-0 ff-section-title">Top risques (5)</h5>
+        </div>
+        <div class="ff-card-body">
+          {% if risk_items %}
+            <div class="ff-alert-list">
+              {% for item in risk_items %}
+                {% url 'shipment_detail' item.shipment.id as shipment_url %}
+                {% include "components/alert_item.html" with level="critical" title=item.shipment.container_no message=item.reasons url=shipment_url %}
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="mb-0 text-muted">Aucun risque majeur détecté.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card ff-card ff-card--soft">
+        <div class="ff-card-header">
+          <h5 class="mb-0 ff-section-title">Qualité opérationnelle</h5>
+        </div>
+        <div class="ff-card-body">
+          <div class="ff-table-wrap">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle ff-table">
+                <thead>
+                  <tr>
+                    <th>Indicateur</th>
+                    <th class="text-end">Valeur</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>BL disponible</td>
+                    <td class="text-end">
+                      {% if docs_quality and docs_quality.bl_pct != None %}
+                        {{ docs_quality.bl_pct }}%
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>INVOICE disponible</td>
+                    <td class="text-end">
+                      {% if docs_quality and docs_quality.inv_pct != None %}
+                        {{ docs_quality.inv_pct }}%
+                      {% else %}
+                        —
+                      {% endif %}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-12 col-lg-6">
+      <div class="card ff-card ff-card--soft">
+        <div class="ff-card-header">
+          <h5 class="mb-0 ff-section-title">Répartition par statut</h5>
+        </div>
+        <div class="ff-card-body">
+          {% if status_breakdown %}
+            <div class="ff-table-wrap">
+              <div class="table-responsive">
+                <table class="table table-striped align-middle ff-table">
+                  <thead>
+                    <tr>
+                      <th>Statut</th>
+                      <th class="text-end">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in status_breakdown %}
+                      <tr>
+                        <td>{{ row.status }}</td>
+                        <td class="text-end">{{ row.count }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          {% else %}
+            <p class="mb-0 text-muted">Aucune donnée.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-12 col-lg-6">
+      <div class="card ff-card ff-card--soft">
+        <div class="ff-card-header">
+          <h5 class="mb-0 ff-section-title">Activité direction</h5>
+        </div>
+        <div class="ff-card-body">
+          <div class="ff-grid ff-grid-2">
+            <div class="ff-card ff-stat ff-kpi kpi-blue">
+              <div class="ff-stat-label">Documents ajoutés (7j)</div>
+              <div class="ff-stat-value">{{ docs_week|default:"—" }}</div>
+            </div>
+            <div class="ff-card ff-stat ff-kpi kpi-green">
+              <div class="ff-stat-label">Messages envoyés (7j)</div>
+              <div class="ff-stat-value">{{ chats_week|default:"—" }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

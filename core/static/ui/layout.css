@@ -1,0 +1,31 @@
+/* Layout helpers */
+.ff-container {
+  max-width: 1260px;
+}
+
+.ff-body {
+  padding-top: 0;
+}
+
+.ff-section {
+  margin-bottom: 1.5rem;
+}
+
+.ff-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.ff-grid-4 {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.ff-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+@media (max-width: 991px) {
+  .ff-body {
+    padding-top: 0;
+  }
+}

@@ -10,13 +10,22 @@ def avatar_url(user, default_path="img/avatar-default.png"):
     default_url = static(default_path)
     if not user:
         return default_url
-    if not getattr(settings, "CLOUDINARY_ENABLED", False):
-        return default_url
-    avatar = getattr(user, "avatar", None)
-    if not avatar:
-        return default_url
-    try:
-        url = avatar.url
-    except Exception:
-        return default_url
-    return url or default_url
+    cloudinary_enabled = getattr(settings, "CLOUDINARY_ENABLED", False)
+    if cloudinary_enabled:
+        avatar = getattr(user, "avatar", None)
+        if avatar:
+            try:
+                url = avatar.url
+                if url:
+                    return url
+            except Exception:
+                pass
+    local_avatar = getattr(user, "local_avatar", None)
+    if local_avatar:
+        try:
+            url = local_avatar.url
+            if url:
+                return url
+        except Exception:
+            pass
+    return default_url

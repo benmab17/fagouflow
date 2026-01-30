@@ -1,0 +1,19 @@
+﻿{% extends "base_client.html" %}
+
+{% block title %}Discussion - {{ container.container_no }}{% endblock %}
+
+{% block content %}
+  <div class="mb-4 d-flex justify-content-between align-items-center">
+    <div>
+      <h3 class="mb-1">Discussion</h3>
+      <div class="text-2">Conteneur {{ container.container_no }}</div>
+    </div>
+    <a href="{% url 'client_container_detail' container.id %}" class="btn btn-sm btn-outline-primary">Retour</a>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="text-3">Discussion client à venir.</div>
+    </div>
+  </div>
+{% endblock %}

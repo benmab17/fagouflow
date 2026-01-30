@@ -1,0 +1,67 @@
+﻿{% extends "base_client.html" %}
+
+{% block title %}Mes conteneurs{% endblock %}
+
+{% block content %}
+  <div class="mb-4">
+    <h3 class="mb-1">Mes conteneurs</h3>
+    <div class="text-2">Liste complète de vos expéditions</div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th>Référence</th>
+              <th>Origine</th>
+              <th>Destination</th>
+              <th>Statut</th>
+              <th>ETA</th>
+              <th>Dernière MAJ</th>
+              <th class="text-end">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in page_obj %}
+              <tr>
+                <td>{{ c.reference|default:c.container_no }}</td>
+                <td>{{ c.origin|default:c.origin_country }}</td>
+                <td>{{ c.destination|default:c.destination_site }}</td>
+                <td><span class="badge">{{ c.status }}</span></td>
+                <td>{{ c.eta|date:"d/m/Y"|default:"—" }}</td>
+                <td>{{ c.updated_at|date:"d/m/Y H:i"|default:c.created_at }}</td>
+                <td class="text-end">
+                  <a href="{% url 'client_container_detail' c.id %}" class="btn btn-sm btn-primary">Voir</a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="text-center text-3">Aucun conteneur disponible.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if page_obj.paginator.num_pages > 1 %}
+        <nav class="mt-3">
+          <ul class="pagination pagination-sm mb-0">
+            {% if page_obj.has_previous %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Précédent</a>
+              </li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+              <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Suivant</a>
+              </li>
+            {% endif %}
+          </ul>
+        </nav>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
