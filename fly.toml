@@ -1,4 +1,4 @@
-﻿app = "fagouflow"
+app = "fagouflow"
 primary_region = "cdg"
 
 [build]
@@ -18,10 +18,9 @@ primary_region = "cdg"
   auto_stop_machines = true
   min_machines_running = 0
 
-  # REMPLACE le health check par quelque chose de plus simple
   [[http_service.checks]]
     interval = "30s"
     timeout = "10s"
     grace_period = "30s"
     method = "GET"
-    path = "/"  # Au lieu de /healthz
+    path = "/"
