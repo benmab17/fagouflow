@@ -4,15 +4,20 @@ import dj_database_url
 
 DEBUG = False
 
-# CORRECTION ICI :
+# CORRECTION : Accepte TOUTES les IPs internes de Fly.io
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '.fly.dev',           # Pour tous les sous-domaines Fly.io
-    'fagouflow.fly.dev',  # Ton domaine exact
+    '.fly.dev',
+    'fagouflow.fly.dev',
     '.onrender.com',
     '.railway.app',
+    '172.19.0.0/16',  # Plage d'IPs internes Fly.io
+    '10.0.0.0/8',     # Plage d'IPs privées
 ]
+
+# Ou plus simple : accepte tout en développement
+# ALLOWED_HOSTS = ['*']  # TEMPORAIREMENT pour tester
 
 # Database
 DATABASES = {
@@ -26,10 +31,10 @@ DATABASES = {
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Security
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# Security (désactive temporairement pour debug)
+SECURE_SSL_REDIRECT = False  # À remettre à True après
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
 # CSRF
 CSRF_TRUSTED_ORIGINS = [
