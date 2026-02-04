@@ -14,6 +14,11 @@ from reports.views import AuditReportViewSet
 from django.conf import settings
 from django.conf.urls.static import static
 
+admin.site.site_header = "Administration de Fagou SPRL"
+admin.site.site_title = "Fagou SPRL"
+admin.site.index_title = "Tableau de bord"
+
+
 from core.views import ClientLoginView, RoleLoginView, dashboard, dashboard_export, direction_view, document_share_view, healthz, logout_view, profile_view, reports_view, shipment_detail, shipment_documents, shipments_list
 from core.views import (
     client_portal,
