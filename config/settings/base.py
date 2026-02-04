@@ -47,6 +47,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -86,10 +87,10 @@ _default_db_url = "postgresql://{user}:{password}@{host}:{port}/{name}".format(
     name=os.getenv("POSTGRES_DB", "fagouflow"),
 )
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL"),
+     "default": dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
         conn_max_age=600,
-        ssl_require=True,
+        ssl_require=bool(os.getenv("DATABASE_URL")),
     )
 }
 
@@ -101,7 +102,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "fr-fr"
-TIME_ZONE = "UTC"
+TIME_ZONE = "Europe/Paris"
 USE_I18N = True
 USE_TZ = True
 
